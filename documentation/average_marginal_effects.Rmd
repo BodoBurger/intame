@@ -69,15 +69,15 @@ because the ME does vary significantly.
 lm.mod$coefficients
 (lm.ame = computeAME(lm.mod, data = df, c("x1", "x2")))
 (poly12.ame = computeAME(poly12.mod, df, c("x1", "x2")))
-p1 = plotAME(lm.mod, df, lm.ame, "y") + ggtitle("linear model")
-p2 = plotAME(poly12.mod, df, poly12.ame, "y") + ggtitle("poly12 model")
+p1 = plot(lm.ame, df, "y") + ggtitle("linear model")
+p2 = plot(poly12.ame, df, "y") + ggtitle("poly12 model")
 gridExtra::grid.arrange(p1, p2, nrow = 2)
 ```
 
 ```{r, fig.cap="Red line: AME poly12. Green line: AME lm"}
 lm.coef = coef(lm.mod)
 poly12.ame = computeAME(poly12.mod, df, features = "x1")
-plotAME(poly12.mod, df, poly12.ame, "y") +
+plot(poly12.ame, df, "y") +
   geom_abline(mapping = aes(slope = lm.coef[2], intercept = lm.coef[1]), 
     color = "green") +
   ggtitle("AME of lm and poly12")
@@ -147,8 +147,8 @@ ggplot(data = df.plot, mapping = aes(x = x1, y = y, col = type, group = type)) +
 lm.mod
 (lm.ame = computeAME(lm.mod, df, c("x1", "x2")))
 (poly12.ame = computeAME(poly12.mod, df, c("x1", "x2")))
-p1 = plotAME(lm.mod, df, lm.ame, "y") + ggtitle("linear model")
-p2 = plotAME(poly12.mod, df, poly12.ame, "y") + ggtitle("poly12 model")
+p1 = plot(lm.ame, df, "y") + ggtitle("linear model")
+p2 = plot(poly12.ame, df, "y") + ggtitle("poly12 model")
 gridExtra::grid.arrange(p1, p2, nrow = 2)
 ```
 

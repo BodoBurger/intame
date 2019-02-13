@@ -4,6 +4,7 @@
 #'
 #' @section TODO:
 #' \itemize{
+#'   \item implement option for Apley's normalization
 #'   \item implement mlr models
 #'   \item factor features
 #'   \item add uniform grid option is useful (what happens to empty intervals?)
@@ -67,8 +68,10 @@ computeALE = function(model, data, feature, K = "default",
     f = f + matrix(y.hat.l[1,], K+1, nclass, byrow = TRUE)
     #f = apply(f, 2, function(f) f - sum((f[1:K] + f[2:(K + 1)])/2 * w) / sum(w))
     ale = apply(delta, 2, function(x) x/diff(z))
-    ale.plot.data = reshape2::melt(data = data.frame(x = z, f), id.vars = "x", variable.name = "class", value.name = "f")
-    #ale.plot.data = reshape2::melt(data = data.frame(x = z[-length(z)], y.hat.l), id.vars = "x", variable.name = "class", value.name = "probability")
+    ale.plot.data = reshape2::melt(data = data.frame(x = z, f), id.vars = "x",
+      variable.name = "class", value.name = "f")
+    #ale.plot.data = reshape2::melt(data = data.frame(x = z[-length(z)], y.hat.l),
+    #  id.vars = "x", variable.name = "class", value.name = "probability")
   } else {
     delta = y.hat.u - y.hat.l # probably better (numerically) to do tapply on y.hat, see multiclass
     delta = as.numeric(tapply(delta, interval.indices, mean))
@@ -78,9 +81,12 @@ computeALE = function(model, data, feature, K = "default",
     ale.plot.data = data.frame(x = z, f)
   }
   ale.x = z[-length(z)]
-  return(list(x = z, f = f, K = K, i = interval.indices,
-    ale = ale, ale.x = ale.x, ale.plot.data = ale.plot.data,
-    multiclass = multiclass, feature = feature))
+  return(structure(list(x = z, f = f, K = K, i = interval.indices,
+                        ale = ale, ale.x = ale.x,
+                        ale.plot.data = ale.plot.data,
+                        multiclass = multiclass, feature = feature),
+                   class = c("ALE", "intame"),
+                   comment = "Accumulated Local Effect"))
 }
 
 #' Create ALE Plot
@@ -91,7 +97,7 @@ computeALE = function(model, data, feature, K = "default",
 #'
 #' @return \code{ggplot}
 #' @export
-plotALE = function(ALE, derivative = FALSE) {
+plot.ALE = function(ALE, derivative = FALSE) {
   if (ALE$multiclass) {
     ggplot2::ggplot(data = ALE$ale.plot.data,
       aes(x = x, y = f, group = class, col = class)) +

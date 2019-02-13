@@ -8,7 +8,7 @@
 #'   Feature name, subset of \code{colnames(data)}.
 #' @param breaks [\code{numeric}]
 #'
-#' @return
+#' @return [\code{intame}]
 #' @export
 #'
 #' @examples
@@ -44,6 +44,50 @@ intame = function(model, data, feature, n.parts = 5, method = "ALE", breaks = NU
   for (i in 1:(l-1)) {
     interval.desc[i] = paste0("[", bounds.rounded[i], ", ", bounds.rounded[i+1], ")")
   }
-  return(list(AME = setNames(AME, interval.desc), bounds = bounds, breaks = breaks,
-    y.hat.mean = y.hat.mean, x.interval.average = x.interval.average, y.hat = y.hat, x = x))
+  return(structure(list(AME = setNames(AME, interval.desc),
+                        bounds = bounds,
+                        breaks = breaks,
+                        feature = feature,
+                        y.hat.mean = y.hat.mean,
+                        x.interval.average = x.interval.average,
+                        y.hat = y.hat,
+                        x = x),
+                   class = "intame",
+                   comment = "Main class of intame package."))
+}
+
+#' @export
+print.intame = function(x) {
+  print(x$AME)
+}
+
+#' @export
+summary.intame = function(x) {
+  cat("# Interval-based Marginal Effects for", x$feature, "#\n\n")
+  cat(format("Interval", width = 14, justify = "right"), " | Average Marginal Effect\n", sep = "")
+  for (i in seq_along(x$AME)) {
+    cat(format(names(x$AME)[i], width = 14, justify = "right"), " | ", x$AME[i], "\n", sep = "")
+  }
+  cat("\n")
+}
+
+#' Visualize the result of intame
+#'
+#' TODO: plot ALE instead of predictions
+#'
+#' @param x [\code{intame}]
+#'
+#' @export
+plot.intame = function(x) {
+  AME = x$AME
+  x.0 = x$x.interval.average
+  y.0 = x$y.hat.mean
+  bounds = x$bounds
+  p = ggplot2::ggplot() +
+    ggplot2::geom_point(mapping = aes(x$x, x$y.hat), pch = 16, alpha = .2)
+  for(i in 1:(length(bounds)-1)) {
+    p = p + ggplot2::geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] - (x.0[i] - bounds[i]) * AME[i],
+      y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])), col = "green", inherit.aes = FALSE)
+  }
+  return(p)
 }

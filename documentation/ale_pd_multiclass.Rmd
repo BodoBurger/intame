@@ -59,7 +59,7 @@ pred.petwidth.seto = data.frame(x = iris$Petal.Width,
   y = predict(nnet.mod$learner.model, iris)[,1])
 ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width", K = 20,
   multiclass = TRUE)
-plotALE(ALE) + geom_point(data = pred.petwidth.seto,
+plot(ALE) + geom_point(data = pred.petwidth.seto,
   mapping = aes(x = x, y = y), alpha = .2, inherit.aes = FALSE)
 plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
   features = "Petal.Width", n = 20))
@@ -95,7 +95,7 @@ head(data.frame(setosa = f.setosa.org, versicolor = f.versi.org, virginica = f.v
 
 ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Length", K = 10, 
   multiclass = TRUE)
-plotALE(ALE)
+plot(ALE)
 plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task,
   features = "Petal.Length", n = 10, uniform = TRUE))
 ```
@@ -144,7 +144,7 @@ svm.mod = train(svm.lrn, iris.task, subset = train.sub)
 performance(predict(svm.mod, iris.task, subset = !train.sub), measures = list(mmce, acc))
 plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task))
 svm.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width", K = 10, multiclass = TRUE)
-plotALE(svm.ALE)
+plot(svm.ALE)
 ```
 
 ## Local partial dependence
@@ -154,10 +154,10 @@ plotALE(svm.ALE)
 ```{r}
 LPD.petwid = computePD(nnet.mod$learner.model, iris, "Petal.Width",
   n = 10, l = 15, multiclass = TRUE)
-plotPD(LPD.petwid)
+plot(LPD.petwid)
 plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task,
   features = "Petal.Width", n = 20))
-plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width", 
+plot(computePD(nnet.mod$learner.model, iris, "Petal.Width", 
   n = 20, wp = 4, multiclass = TRUE))
 ```
 
@@ -166,20 +166,20 @@ plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width",
 ```{r}
 plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
   features = "Petal.Width", n = 20, derivative = TRUE))
-plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width",
+plot(computePD(nnet.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 20, multiclass = TRUE, derivative = TRUE))
-plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width",
+plot(computePD(nnet.mod$learner.model, iris, "Petal.Width",
   n = 20, wp = 4, multiclass = TRUE, derivative = TRUE))
 ```
 
 #### Petal Length
 
 ```{r}
-plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Length",
+plot(computePD(nnet.mod$learner.model, iris, "Petal.Length",
   n = 40, l = 15, multiclass = TRUE))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
   features = "Petal.Length", n = 40))
-plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Length",
+plot(computePD(nnet.mod$learner.model, iris, "Petal.Length",
   n = 40, wp = 4, multiclass = TRUE))
 ```
 
@@ -204,7 +204,7 @@ plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task))
 gbm.ALE = computeALE(gbm.mod$learner.model, iris, "Petal.Width",
   K = 10, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "response", n.trees = 500)[, , 1])
-plotALE(gbm.ALE)
+plot(gbm.ALE)
 # negative probabilties; prob of setosa does not get down at all
 
 ALE = ALEPlot::ALEPlot(iris[-5], gbm.mod$learner.model,
@@ -222,7 +222,7 @@ Scale on original ALEPlot function not useful.
 gbm.LPD.petwid = computePD(gbm.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "response", n.trees = 500)[, , 1])
-plotPD(gbm.LPD.petwid)
+plot(gbm.LPD.petwid)
 plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
   features = "Petal.Width", n = 20))
 # again local partial dependence much better
@@ -231,7 +231,7 @@ plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
 gbm.LPD.petlen = computePD(gbm.mod$learner.model, iris, "Petal.Length",
   n = 40, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "response", n.trees = 500)[, , 1])
-plotPD(gbm.LPD.petlen)
+plot(gbm.LPD.petlen)
 plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
   features = "Petal.Length", n = 40))
 ```
@@ -248,7 +248,7 @@ plotPartialDependence(generatePartialDependenceData(rf.mod, iris.task))
 rf.LPD.petwid = computePD(rf.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "prob"))
-plotPD(rf.LPD.petwid)
+plot(rf.LPD.petwid)
 plotPartialDependence(generatePartialDependenceData(rf.mod, iris.task,
   features = "Petal.Width", n = 20))
 ```
@@ -265,13 +265,13 @@ plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task))
 svm.ALE = computeALE(svm.mod$learner.model, iris, "Petal.Width", K = 10,
   multiclass = TRUE, predict.fun = function(object, newdata)
     attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
-plotALE(svm.ALE)
+plot(svm.ALE)
 # negative probabilities
 
 svm.LPD.petwid = computePD(svm.mod$learner.model, iris, "Petal.Width",
   n = 10, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
-plotPD(svm.LPD.petwid)
+plot(svm.LPD.petwid)
 plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task,
   features = "Petal.Width", n = 10))
 

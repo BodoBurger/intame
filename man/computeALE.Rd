@@ -37,6 +37,7 @@ Implementation of \href{https://arxiv.org/abs/1612.08468}{Apley (2016) Visualizi
 \section{TODO}{
 
 \itemize{
+  \item implement option for Apley's normalization
   \item implement mlr models
   \item factor features
   \item add uniform grid option is useful (what happens to empty intervals?)

@@ -88,8 +88,12 @@ computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
   } else {
     plot.data = data.frame(x = x.grid, y.hat)
   }
-  return(list(y.hat = y.hat, x.grid = x.grid, plot.data = plot.data, n = n,
-    l = l, multiclass = multiclass, feature = feature))
+  return(structure(list(y.hat = y.hat, x.grid = x.grid,
+                        plot.data = plot.data,
+                        n = n, l = l,
+                        multiclass = multiclass, feature = feature),
+                   class = c("PD", "intame"),
+                   comment = "Partial Dependence"))
 }
 
 #' Plot partial dependence
@@ -98,7 +102,7 @@ computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
 #'
 #' @return \code{ggplot}
 #' @export
-plotPD = function(PD) {
+plot.PD = function(PD) {
   if (PD$multiclass) {
     ggplot2::ggplot(data = PD$plot.data,
       aes(x = x, y = probability, group = class, col = class)) +

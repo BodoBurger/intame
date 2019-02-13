@@ -106,13 +106,13 @@ We can further see: partial dependence heavily depends on the method
 ```{r ale-nnet-petlen}
 nnet.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Length",
   K = 20, multiclass = TRUE)
-plotALE(nnet.ALE) + ggtitle("ALE plot")
+plot(nnet.ALE) + ggtitle("ALE plot")
 ```
 
 ```{r ale-nnet-petwid}
 nnet.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width",
   K = 20, multiclass = TRUE)
-plotALE(nnet.ALE)
+plot(nnet.ALE)
 ```
 
 Plot for *Petal.Length* looks plausible, but for *Petal.Width*:
@@ -131,10 +131,10 @@ Calculate Partial Dependence only with points nearby.
 ```{r lpd-nnet,fig.height=3,fig.width=5}
 LPD.petwid = computePD(nnet.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 15, multiclass = TRUE)
-plotPD(LPD.petwid)
+plot(LPD.petwid)
 LPD.petlen = computePD(nnet.mod$learner.model, iris, "Petal.Length",
   n = 20, l = 15, multiclass = TRUE)
-plotPD(LPD.petlen)
+plot(LPD.petlen)
 ```
 
 #### LPD gbm
@@ -143,11 +143,11 @@ plotPD(LPD.petlen)
 gbm.LPD.petwid = computePD(gbm.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "response", n.trees = 1000)[, , 1])
-plotPD(gbm.LPD.petwid)
+plot(gbm.LPD.petwid)
 gbm.LPD.petlen = computePD(gbm.mod$learner.model, iris, "Petal.Length",
   n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     predict(object, newdata, type = "response", n.trees = 1000)[, , 1])
-plotPD(gbm.LPD.petlen)
+plot(gbm.LPD.petlen)
 ```
 
 #### LPD SVM
@@ -156,7 +156,7 @@ plotPD(gbm.LPD.petlen)
 svm.LPD.petwid = computePD(svm.mod$learner.model, iris, "Petal.Width",
   n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
     attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
-plotPD(svm.LPD.petwid)
+plot(svm.LPD.petwid)
 ```
 
 All LPD plots show a similar picture regardless of the fitting method.
@@ -287,8 +287,8 @@ gbm.mod = train(gbm.lrn, tsk)
 
 ```{r,fig.width=9}
 gridExtra::grid.arrange(
-  plotPD(computePD(lm.mod$learner.model, dt, "x1", l = 20)) + ggtitle("LPD, l=20"),
-  plotPD(computePD(lm.mod$learner.model, dt, "x1", l = 200)) + ggtitle("LPD, l = 200"),
+  plot(computePD(lm.mod$learner.model, dt, "x1", l = 20)) + ggtitle("LPD, l=20"),
+  plot(computePD(lm.mod$learner.model, dt, "x1", l = 200)) + ggtitle("LPD, l = 200"),
   plotPartialDependence(generatePartialDependenceData(lm.mod, tsk, "x1", n = 30,
   individual = FALSE, derivative = FALSE)) + ggtitle("PD"),
   ncol = 3)
@@ -300,10 +300,10 @@ For *l = nrow(data)* LPD equals PD.
 ```{r}
 l = 20
 gridExtra::grid.arrange(
-  plotPD(computePD(lm.mod$learner.model, dt, "x2", l = l)),
-  plotPD(computePD(lm.mod$learner.model, dt, "x3", l = l)),
-  plotPD(computePD(lm.mod$learner.model, dt, "x4", l = l)),
-  plotPD(computePD(lm.mod$learner.model, dt, "x5", l = l)),
+  plot(computePD(lm.mod$learner.model, dt, "x2", l = l)),
+  plot(computePD(lm.mod$learner.model, dt, "x3", l = l)),
+  plot(computePD(lm.mod$learner.model, dt, "x4", l = l)),
+  plot(computePD(lm.mod$learner.model, dt, "x5", l = l)),
   ncol = 2)
 ```
 
@@ -319,26 +319,26 @@ Derivative "works" (returns same value for each grid point).
 
 ```{r}
 par(mfrow = c(1,1))
-plotPD(computePD(nnet.mod$learner.model, dt, "x5", l = 20, n = 50))
-plotPD(computePD(nnet.mod$learner.model, dt, "x5", wp = 2, n = 50))
-plotPD(computePD(nnet.mod$learner.model, dt, "x5", n = 100)) # wp=0 --> partial dependence
+plot(computePD(nnet.mod$learner.model, dt, "x5", l = 20, n = 50))
+plot(computePD(nnet.mod$learner.model, dt, "x5", wp = 2, n = 50))
+plot(computePD(nnet.mod$learner.model, dt, "x5", n = 100)) # wp=0 --> partial dependence
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5",
   n = 100, individual = FALSE))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5",
   n = 10, individual = TRUE))
 
-plotPD(computePD(nnet.mod$learner.model, dt, "x4", l = 20))
-plotPD(computePD(nnet.mod$learner.model, dt, "x4", wp = 1, n = 20))
+plot(computePD(nnet.mod$learner.model, dt, "x4", l = 20))
+plot(computePD(nnet.mod$learner.model, dt, "x4", wp = 1, n = 20))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x4", n = 100, individual = FALSE))
 plot(seq(-.1, 1, .05), y4(seq(-.1, 1, .05)), type = "l")
 
-plotPD(computePD(nnet.mod$learner.model, dt, "x2", l = 20, n = 50))
-plotPD(computePD(nnet.mod$learner.model, dt, "x2", wp = 1))
+plot(computePD(nnet.mod$learner.model, dt, "x2", l = 20, n = 50))
+plot(computePD(nnet.mod$learner.model, dt, "x2", wp = 1))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x2", n = 20, individual = FALSE))
 plot(seq(0, 1, .05), y2(seq(0, 1, .05)), type = "l")
 
-plotPD(computePD(nnet.mod$learner.model, dt, "x1", l = 20, n = 50))
-plotPD(computePD(nnet.mod$learner.model, dt, "x1", wp = 4))
+plot(computePD(nnet.mod$learner.model, dt, "x1", l = 20, n = 50))
+plot(computePD(nnet.mod$learner.model, dt, "x1", wp = 4))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x1", n = 100, individual = FALSE))
 plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x1", n = 10, individual = TRUE))
 plot(seq(0, 1, .05), y1(seq(0, 1, .05)), type = "l")
@@ -351,7 +351,7 @@ nnet.pred.fun = function(object, newdata) predict(object, newdata)
 gridExtra::grid.arrange(
   plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5", n = 50, derivative = TRUE)) +
     scale_y_continuous(limits = c(-45,35)) + ggtitle("Partial Deriv"),
-  plotPD(computePD(nnet.mod$learner.model, dt, "x5", n = 50, l = 20, derivative = TRUE,
+  plot(computePD(nnet.mod$learner.model, dt, "x5", n = 50, l = 20, derivative = TRUE,
     predict.fun = nnet.pred.fun)) +
     scale_y_continuous(limits = c(-45,35)) + ggtitle("Local Partial Deriv"),
   ncol = 2)
@@ -362,7 +362,7 @@ gridExtra::grid.arrange(
 ```{r}
 # partition differences
 PD = computePD(nnet.mod$learner.model, dt, "x5", wp = 2)
-plotPD(PD)
+plot(PD)
 x.grid.dist = diff(PD$x.grid)[1]
 y.hat.diffs = diff(PD$y.hat) / x.grid.dist
 
@@ -372,7 +372,7 @@ abline(v = partition(PD$x.grid[-length(PD$x.grid)] + x.grid.dist/2, y.hat.diffs,
 # partition derivative
 PDeriv = computePD(nnet.mod$learner.model, dt, "x5", wp = 2, derivative = TRUE,
   predict.fun = nnet.pred.fun)
-plotPD(PDeriv)
+plot(PDeriv)
 
 plot(PD$x.grid, PD$y.hat, type = "l")
 abline(v = partition(PDeriv$x.grid, PDeriv$y.hat, 7))
@@ -384,16 +384,15 @@ plot(PD$x.grid, PD$y.hat, type = "l")
 plot(ALE$x, ALE$f, type = "l")
 abline(v = partition(ALE$x[-101], ALE$ale, 5), col = "red")
 abline(v = partition(ALE$x[-101], ALE$ale, 7, part.method = "cluster"))
-
 ```
 
 ### Gradient boosting
 
 ```{r}
 gbm.pred.fun = function(object, newdata) predict(object, newdata, n.trees = 10000)
-plotPD(computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun))
-plotPD(computePD(gbm.mod$learner.model, dt, "x5", wp = 1, predict.fun = gbm.pred.fun))
-plotPD(computePD(gbm.mod$learner.model, dt, "x5", wp = 0, predict.fun = gbm.pred.fun))
+plot(computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun))
+plot(computePD(gbm.mod$learner.model, dt, "x5", wp = 1, predict.fun = gbm.pred.fun))
+plot(computePD(gbm.mod$learner.model, dt, "x5", wp = 0, predict.fun = gbm.pred.fun))
 plotPartialDependence(generatePartialDependenceData(gbm.mod, tsk, "x5", n = 40, individual = FALSE))
 plotPartialDependence(generatePartialDependenceData(gbm.mod, tsk, "x5", n = 10, individual = TRUE))
 ```
@@ -414,7 +413,7 @@ Derivatives for Gradient Boosting always zero.
 ```{r}
 # LPD
 PD = computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun)
-plotPD(PD)
+plot(PD)
 x.grid.dist = diff(PD$x.grid)[1]
 y.hat.diffs = diff(PD$y.hat) / x.grid.dist
 plot(PD$x.grid, PD$y.hat, type = "l")
@@ -427,5 +426,4 @@ x.grid.dist = diff(PD$data$x5)[1]
 y.hat.diffs = diff(PD$data$y) / x.grid.dist
 plot(PD$data$x5, PD$data$y, type = "l")
 abline(v = partition(PD$data$x5[-length(PD$data$x5)] + x.grid.dist/2, y.hat.diffs, 5))
-
 ```

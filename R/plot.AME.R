@@ -1,9 +1,9 @@
-#' Plot AME
+#' Visualize AME feature-wise
 #'
-#' @param object Model object
+#' @param AME
 #' @param data data.frame
-#' @param ame AME object
 #' @param target character(1) Name of target variable.
+#' @param model
 #'
 #' @section TODOS:
 #' \itemize{
@@ -14,9 +14,9 @@
 #' }
 #'
 #' @export
-plotAME = function(object, data, ame, target) {
-  features = names(ame)
-  ame = as.numeric(ame)
+plot.AME = function(AME, data, target, model = NA) {
+  features = names(AME)
+  ame = as.numeric(AME)
   names(ame) = features
   data = data[, c(features, target)]
   features.mean = colMeans(data[, features, drop = FALSE])
@@ -33,23 +33,3 @@ plotAME = function(object, data, ame, target) {
     ggplot2::geom_line(mapping = aes(y = y.ame), col = "red") +
     ggplot2::facet_wrap(~ feature, scales = "free_x")
 }
-
-#' Plot AME intervals
-#'
-#' TODO: plot ALE instead of predictions
-#'
-#' @export
-plotAMEInterval = function(AMEInterval) {
-  AME = AMEInterval$AME
-  x.0 = AMEInterval$x.interval.average
-  y.0 = AMEInterval$y.hat.mean
-  bounds = AMEInterval$bounds
-  p = ggplot() +
-    geom_point(mapping = aes(AMEInterval$x, AMEInterval$y.hat), pch = 16, alpha = .2)
-  for(i in 1:(length(bounds)-1)) {
-    p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] - (x.0[i] - bounds[i]) * AME[i],
-      y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])), col = "green", inherit.aes = FALSE)
-  }
-  return(p)
-}
-

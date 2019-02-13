@@ -19,6 +19,9 @@ Feature name, subset of \code{colnames(data)}.}
 
 \item{breaks}{[\code{numeric}]}
 }
+\value{
+[\code{intame}]
+}
 \description{
 Compute AME given break points on the sample space of a feature.
 }
