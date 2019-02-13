@@ -1,0 +1,321 @@
+---
+title: "ALE and PD for Multiclass Tasks"
+author: "Bodo Burger"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: yes
+  rmarkdown::html_vignette:
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{ALE and PD for Multiclass Tasks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+  echo = TRUE, message = FALSE, warning = TRUE,
+  cache = TRUE, cache.path = "cache/ale_pd_multiclass/",
+  fig.cap = TRUE)
+library(intame)
+library(mlr)
+library(ALEPlot)
+library(ggplot2)
+library(reshape2)
+theme_set(theme_light())
+```
+ 
+## Look at iris data
+
+```{r}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, col = Species)) + geom_point()
+ggplot(data = iris, aes(x = Petal.Length, y = Petal.Width, col = Species)) + geom_point()
+ggplot(data = iris, aes(x = Petal.Length, y = Sepal.Length, col = Species)) + geom_point()
+ggplot(data = iris, aes(x = Petal.Width, y = Sepal.Width, col = Species)) + geom_point()
+ggplot(data = iris, aes(x = Petal.Length, y = Sepal.Width, col = Species)) + geom_point()
+ggplot(data = iris, aes(x = Petal.Width, y = Sepal.Width, col = Species)) + geom_point()
+cor(iris[-5])
+```
+
+## ALE and PD
+
+### Neural Net
+
+```{r}
+n = getTaskSize(iris.task)
+train.sub = rep(TRUE, n)
+train.sub[c(sample(1:50, 10), sample(1:50, 10) + 50, sample(1:50, 10) + 100)] = FALSE
+nnet.lrn = makeLearner("classif.nnet", skip = FALSE, size = 20, decay = 0.0001, maxit = 1000,
+  trace = FALSE, predict.type = "prob")
+nnet.mod = train(nnet.lrn, iris.task, subset = train.sub)
+performance(predict(nnet.mod, iris.task, subset = !train.sub), measures = list(mmce, acc))
+```
+
+#### Petal Width
+
+```{r}
+pred.petwidth.seto = data.frame(x = iris$Petal.Width, 
+  y = predict(nnet.mod$learner.model, iris)[,1])
+ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width", K = 20,
+  multiclass = TRUE)
+plotALE(ALE) + geom_point(data = pred.petwidth.seto,
+  mapping = aes(x = x, y = y), alpha = .2, inherit.aes = FALSE)
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
+  features = "Petal.Width", n = 20))
+# does ICE plot help?
+nnet.ICE = generatePartialDependenceData(nnet.mod, iris.task,
+  features = "Petal.Width", individual = TRUE)
+ggplot(subset(nnet.ICE$data, Class == "setosa"), 
+  aes(x = Petal.Width, y = Probability, group = n)) +
+  geom_point() + geom_line()
+ALE = ALEPlot(iris[-5], nnet.mod$learner.model, pred.fun = function(X.model, newdata)
+  predict(X.model, newdata)[,"setosa"], J = 4)
+```
+
+So PD averages lots of prob=1 and prob=0 --> PD missleading.
+
+#### Petal Length
+
+```{r}
+nnet.ICE = generatePartialDependenceData(nnet.mod, iris.task,
+  features = "Petal.Length", individual = TRUE)
+ggplot(subset(nnet.ICE$data, Class == "setosa"),
+  aes(x = Petal.Length, y = Probability, group = n)) +
+  geom_point() + geom_line()
+f.setosa.org = ALEPlot(iris[-5], nnet.mod$learner.model, 
+  pred.fun = function(X.model, newdata) predict(X.model, newdata)[,"setosa"], J = 3)$f
+f.versi.org = ALEPlot(iris[-5], nnet.mod$learner.model,
+  pred.fun = function(X.model, newdata) predict(X.model, newdata)[,"versicolor"], J = 3)$f
+f.virgi.org = ALEPlot(iris[-5], nnet.mod$learner.model,
+  pred.fun = function(X.model, newdata) predict(X.model, newdata)[,"virginica"], J = 3)$f
+ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Length", K = 40, multiclass = TRUE)
+head(ALE$f)
+head(data.frame(setosa = f.setosa.org, versicolor = f.versi.org, virginica = f.virgi.org))
+
+ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Length", K = 10, 
+  multiclass = TRUE)
+plotALE(ALE)
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task,
+  features = "Petal.Length", n = 10, uniform = TRUE))
+```
+
+#### PD for all features
+
+```{r}
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, n = 10,
+  uniform = TRUE))
+```
+
+### Gradient Boosting
+
+```{r}
+gbm.lrn = makeLearner("classif.gbm", distribution = "multinomial", n.trees = 1000,
+  predict.type = "prob")
+gbm.mod = train(gbm.lrn, iris.task, subset = train.sub)
+performance(predict(gbm.mod, iris.task, subset = !train.sub),
+  measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task))
+```
+
+- Petal.Width: values >.5, why is the probability of setosa still .3?
+  It should be more like zero
+- Petal.Length: prob of setosa more plausible (zero for values )
+- Is this caused by extrapolation of Partial Dependence?
+- TODO: check ALEPlot here
+
+### Random Forest
+
+```{r}
+rf.lrn = makeLearner("classif.randomForest", predict.type = "prob", ntree = 1000)
+rf.mod = train(rf.lrn, iris.task, subset = train.sub)
+performance(predict(rf.mod, iris.task, subset = !train.sub), measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(rf.mod, iris.task))
+# here probability of setosa drops for both petal.length and petal.width
+# predict(rf.mod$learner.model, newdata = iris, type = "prob")
+# predict(gbm.mod$learner.model, newdata = iris, type = "response", n.trees = 1000)
+```
+
+### SVM
+
+```{r}
+svm.lrn = makeLearner("classif.svm", predict.type = "prob")
+svm.mod = train(svm.lrn, iris.task, subset = train.sub)
+performance(predict(svm.mod, iris.task, subset = !train.sub), measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task))
+svm.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width", K = 10, multiclass = TRUE)
+plotALE(svm.ALE)
+```
+
+## Local partial dependence
+
+### Neural Net
+
+```{r}
+LPD.petwid = computePD(nnet.mod$learner.model, iris, "Petal.Width",
+  n = 10, l = 15, multiclass = TRUE)
+plotPD(LPD.petwid)
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task,
+  features = "Petal.Width", n = 20))
+plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width", 
+  n = 20, wp = 4, multiclass = TRUE))
+```
+
+#### Derivative
+
+```{r}
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
+  features = "Petal.Width", n = 20, derivative = TRUE))
+plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 20, multiclass = TRUE, derivative = TRUE))
+plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Width",
+  n = 20, wp = 4, multiclass = TRUE, derivative = TRUE))
+```
+
+#### Petal Length
+
+```{r}
+plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Length",
+  n = 40, l = 15, multiclass = TRUE))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task, 
+  features = "Petal.Length", n = 40))
+plotPD(computePD(nnet.mod$learner.model, iris, "Petal.Length",
+  n = 40, wp = 4, multiclass = TRUE))
+```
+
+### Gradient Boosting
+
+```{r}
+gbm.lrn = makeLearner("classif.gbm", distribution = "multinomial",
+  n.trees = 500, predict.type = "prob")
+gbm.mod = train(gbm.lrn, iris.task, subset = train.sub)
+performance(predict(gbm.mod, iris.task, subset = !train.sub),
+  measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task))
+```
+
+- Petal.Width: values >.5, why is the probability of setosa still .3.
+- It should be more like zero
+- Petal.Length: prob of setosa more plausible (zero for values )
+
+#### ALE
+
+```{r}
+gbm.ALE = computeALE(gbm.mod$learner.model, iris, "Petal.Width",
+  K = 10, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "response", n.trees = 500)[, , 1])
+plotALE(gbm.ALE)
+# negative probabilties; prob of setosa does not get down at all
+
+ALE = ALEPlot::ALEPlot(iris[-5], gbm.mod$learner.model,
+  pred.fun = function(X.model, newdata)
+    predict(X.model, newdata, type = "response", n.trees = 500)[, 1, 1],
+  J = 4, K = 10)
+```
+
+Scale on original ALEPlot function not useful.
+
+#### PD vs LPD
+
+```{r}
+# Petal.Width:
+gbm.LPD.petwid = computePD(gbm.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "response", n.trees = 500)[, , 1])
+plotPD(gbm.LPD.petwid)
+plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
+  features = "Petal.Width", n = 20))
+# again local partial dependence much better
+
+# Petal.Length:
+gbm.LPD.petlen = computePD(gbm.mod$learner.model, iris, "Petal.Length",
+  n = 40, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "response", n.trees = 500)[, , 1])
+plotPD(gbm.LPD.petlen)
+plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
+  features = "Petal.Length", n = 40))
+```
+
+### Random Forest
+
+```{r}
+rf.lrn = makeLearner("classif.randomForest", predict.type = "prob", ntree = 1000)
+rf.mod = train(rf.lrn, iris.task, subset = train.sub)
+performance(predict(rf.mod, iris.task, subset = !train.sub), measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(rf.mod, iris.task))
+# here probability of setosa drops for both petal.length and petal.width
+
+rf.LPD.petwid = computePD(rf.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "prob"))
+plotPD(rf.LPD.petwid)
+plotPartialDependence(generatePartialDependenceData(rf.mod, iris.task,
+  features = "Petal.Width", n = 20))
+```
+
+### SVM
+
+```{r}
+svm.lrn = makeLearner("classif.svm", predict.type = "prob")
+svm.mod = train(svm.lrn, iris.task, subset = train.sub)
+performance(predict(svm.mod, iris.task, subset = !train.sub),
+  measures = list(mmce, acc))
+plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task))
+
+svm.ALE = computeALE(svm.mod$learner.model, iris, "Petal.Width", K = 10,
+  multiclass = TRUE, predict.fun = function(object, newdata)
+    attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
+plotALE(svm.ALE)
+# negative probabilities
+
+svm.LPD.petwid = computePD(svm.mod$learner.model, iris, "Petal.Width",
+  n = 10, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
+plotPD(svm.LPD.petwid)
+plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task,
+  features = "Petal.Width", n = 10))
+
+# compare to simply plotting the predictions:
+svm.predict.probs = attributes(predict(svm.mod$learner.model, iris, 
+  probability = TRUE))[["probabilities"]]
+svm.predict.data = reshape2::melt(data.frame(x = iris$Petal.Width, svm.predict.probs),
+  id.vars = "x", variable.name = "class", value.name = "probability")
+ggplot(data = svm.predict.data, aes(x = x, y = probability, group = class,
+  col = class)) + geom_point() + geom_line()
+```
+
+### Compute LPD manually
+
+```{r}
+n = 20 # number of grid points
+l = 6 # number of local points
+feature = "Petal.Width"
+x = iris[, feature]
+z = sort(x)
+x.grid = mmpf::uniformGrid(x, n)
+
+# 1st grid point:
+x.grid[1]
+distances = abs(x - x.grid[1])
+max.local.distance = sort(distances)[l]
+obs.ind = which(distances <= max.local.distance) # indices of all local points
+tmp.data = iris[obs.ind, ]
+# predict y.hat for all local points at grid point 1 and take the mean:
+tmp.data[, feature] = x.grid[1]
+y.hat = colMeans(predict(nnet.mod$learner.model, newdata = tmp.data))
+y.hat
+mmpf::marginalPrediction(iris, feature, n = 1, model = nnet.mod$learner.model,
+  int.points = obs.ind)
+
+# 2nd grid point:
+x.grid[2]
+distances = abs(x - x.grid[2])
+(max.local.distance = sort(distances)[l])
+(obs.ind = which(distances <= max.local.distance))
+tmp.data = iris[obs.ind, ]
+tmp.data[, feature] = x.grid[2]
+y.hat = colMeans(predict(nnet.mod$learner.model, newdata = tmp.data))
+y.hat
+mmpf::marginalPrediction(iris, feature, n = n, model = nnet.mod$learner.model,
+  int.points = obs.ind)[1:3]
+```

@@ -1,0 +1,431 @@
+---
+title: Local Partial Dependence Motivation
+author: Bodo Burger
+date: 2018-07
+output:
+  html_document: 
+    toc: yes
+  pdf_document:
+    toc: yes
+  github_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
+                      cache = TRUE, cache.path = "cache/lpd_motivation/",
+                      fig.height = 3, fig.width = 5)
+library("intame")
+library("mlr")
+library("ggplot2")
+library("gridExtra")
+library("nnet")
+library("gbm")
+library("e1071")
+theme_set(theme_light())
+set.seed(4218)
+```
+
+## Iris data set
+
+```{r petal-plot,fig.height=3,fig.width=5}
+knitr::kable(cor(iris[-5]))
+ggplot(data = iris, aes(x = Petal.Length, y = Petal.Width, col = Species)) +
+  geom_point()
+```
+
+Petal.width and Petal.length highly correlated. Class "setosa" is only expected for 
+length $< 2$ and width $<.6$.
+
+### Fit different models
+
+We fit a neural net, gradient boosting machine, and support vector machine.
+
+```{r model-fitting}
+train.sub = rep(TRUE, getTaskSize(iris.task))
+#train.sub[c(sample(1:50, 10), sample(1:50, 10) + 50, 
+#  sample(1:50, 10) + 100)] = FALSE
+nnet.lrn = makeLearner("classif.nnet", skip = FALSE, size = 20, decay = 0.0001,
+  maxit = 1000, trace = FALSE, predict.type = "prob")
+nnet.mod = train(nnet.lrn, iris.task, subset = train.sub)
+gbm.lrn = makeLearner("classif.gbm", distribution = "multinomial",
+  n.trees = 1000, predict.type = "prob")
+gbm.mod = train(gbm.lrn, iris.task, subset = train.sub)
+svm.lrn = makeLearner("classif.svm", predict.type = "prob")
+svm.mod = train(svm.lrn, iris.task, subset = train.sub)
+```
+
+Test accuracy is nearly 1 for all methods.
+
+### PD can be misleading
+
+#### PD nnet
+
+```{r pd-nnet,fig.width=6}
+plotPartialDependence(generatePartialDependenceData(nnet.mod, iris.task,
+  features = c("Petal.Length", "Petal.Width")))
+```
+
+Class *Setosa*: prob for *Petal.Length* is plausible, but prob for *Petal.Width* does not change, while you would expect it to be nearly zero for larger values.
+
+ICE plot for class *setosa* and feature *petal.width* shows the reason for this. Without taking the mean
+you can see that some observations always predict *setosa* and some never, regardless of the value of
+*petal.width*.
+
+```{r ice-ice,fig.width=4}
+nnet.ICE = generatePartialDependenceData(nnet.mod, iris.task, features = "Petal.Width", 
+  individual = TRUE)
+ggplot(subset(nnet.ICE$data, Class == "setosa"), aes(x = Petal.Width, y = Probability, 
+  group = n)) + geom_point() + geom_line() + ggtitle("ICE for class \"setosa\"")
+```
+
+#### PD gbm
+
+Similar picture for gbm:
+
+```{r pd-gbm}
+plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task,
+  features = c("Petal.Length", "Petal.Width")))
+```
+
+#### PD svm
+
+```{r pd-svm}
+plotPartialDependence(generatePartialDependenceData(svm.mod, iris.task,
+  features = c("Petal.Length", "Petal.Width")))
+```
+
+Here, plot indicates that prob for class *versicolor* is higher
+than prob for class *setosa* for small values of *Petal.Width*.
+
+We can further see: partial dependence heavily depends on the method
+(plots differ from method to method).
+
+#### ALEPlot
+
+```{r ale-nnet-petlen}
+nnet.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Length",
+  K = 20, multiclass = TRUE)
+plotALE(nnet.ALE) + ggtitle("ALE plot")
+```
+
+```{r ale-nnet-petwid}
+nnet.ALE = computeALE(nnet.mod$learner.model, iris, "Petal.Width",
+  K = 20, multiclass = TRUE)
+plotALE(nnet.ALE)
+```
+
+Plot for *Petal.Length* looks plausible, but for *Petal.Width*:
+
+- probability for *setosa* does not change; this happens because the method "skips" the area where
+  the predicted probability of *setosa* changes (is my guess)
+- because of this the scale is not useful (negative probabilities)
+
+
+### Alternative: Local Partial Dependence
+
+Calculate Partial Dependence only with points nearby.
+
+#### LPD nnet
+
+```{r lpd-nnet,fig.height=3,fig.width=5}
+LPD.petwid = computePD(nnet.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 15, multiclass = TRUE)
+plotPD(LPD.petwid)
+LPD.petlen = computePD(nnet.mod$learner.model, iris, "Petal.Length",
+  n = 20, l = 15, multiclass = TRUE)
+plotPD(LPD.petlen)
+```
+
+#### LPD gbm
+
+```{r lpd-gbm,fig.height=3,fig.width=5}
+gbm.LPD.petwid = computePD(gbm.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "response", n.trees = 1000)[, , 1])
+plotPD(gbm.LPD.petwid)
+gbm.LPD.petlen = computePD(gbm.mod$learner.model, iris, "Petal.Length",
+  n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    predict(object, newdata, type = "response", n.trees = 1000)[, , 1])
+plotPD(gbm.LPD.petlen)
+```
+
+#### LPD SVM
+
+```{r lpd-svm,fig.height=3,fig.width=5}
+svm.LPD.petwid = computePD(svm.mod$learner.model, iris, "Petal.Width",
+  n = 20, l = 15, multiclass = TRUE, predict.fun = function(object, newdata)
+    attributes(predict(object, newdata, probability = TRUE))[["probabilities"]])
+plotPD(svm.LPD.petwid)
+```
+
+All LPD plots show a similar picture regardless of the fitting method.
+
+### Compare to simply plotting the predictions
+
+```{r}
+nnet.predict.probs = predict(nnet.mod$learner.model, iris)
+nnet.predict.data = reshape2::melt(data.frame(Petal.Width = iris$Petal.Width, 
+  nnet.predict.probs), id.vars = "Petal.Width", variable.name = "class",
+  value.name = "probability")
+ggplot(data = nnet.predict.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() +
+  ggtitle("Predictions nnet")
+
+gbm.predict.probs = predict(gbm.mod$learner.model, iris, type = "response",
+  n.trees = 1000)[, , 1]
+gbm.predict.data = reshape2::melt(data.frame(Petal.Width = iris$Petal.Width,
+  gbm.predict.probs), id.vars = "Petal.Width", variable.name = "class",
+  value.name = "probability")
+ggplot(data = gbm.predict.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() +
+  ggtitle("Predictions GBM")
+
+svm.predict.probs = attributes(predict(svm.mod$learner.model, iris,
+  probability = TRUE))[["probabilities"]]
+svm.predict.data = reshape2::melt(data.frame(Petal.Width = iris$Petal.Width,
+  svm.predict.probs), id.vars = "Petal.Width", variable.name = "class",
+  value.name = "probability")
+ggplot(data = svm.predict.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() +
+  ggtitle("Predictions SVM")
+```
+
+### LOESS 
+
+```{r}
+classes = as.character(unique(svm.predict.data$class))
+
+nnet.loess = vapply(classes, function(class) predict(loess(probability ~ Petal.Width,
+  nnet.predict.data[nnet.predict.data$class == class,], span = .4)),
+  FUN.VALUE = numeric(150))
+nnet.loess.data = nnet.predict.data
+nnet.loess.data$probability = as.numeric(nnet.loess)
+ggplot(data = nnet.loess.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() +
+  ggtitle("LOESS nnet")
+
+gbm.loess = vapply(classes, function(class) predict(loess(probability ~ Petal.Width,
+  gbm.predict.data[gbm.predict.data$class == class,], span = .4)),
+  FUN.VALUE = numeric(150))
+gbm.loess.data = gbm.predict.data
+gbm.loess.data$probability = as.numeric(gbm.loess)
+ggplot(data = gbm.loess.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() + ggtitle("LOESS gbm")
+
+svm.loess = vapply(classes, function(class) predict(loess(probability ~ Petal.Width,
+  svm.predict.data[svm.predict.data$class == class,], span = .4)),
+  FUN.VALUE = numeric(150))
+svm.loess.data = svm.predict.data
+svm.loess.data$probability = as.numeric(svm.loess)
+ggplot(data = svm.loess.data, aes(x = Petal.Width, y = probability,
+  group = class, col = class)) + geom_point() + geom_line() + ggtitle("LOESS SVM")
+```
+
+## From LPD to Marginal effects?
+
+If you choose a uniform grid size for the LPD could simply divide the difference between
+two grid points by the distance of the gird points? (does this allow a useful interpretation?)
+
+
+## Regression example
+
+```{r dgp,fig.width=6, fig.height=6}
+set.seed(4218)
+normalize = function(x, lower.bound = 0, upper.bound = 1) {
+  x.min = min(x)
+  c1 = (upper.bound - lower.bound)/(max(x) - x.min)
+  c2 = lower.bound - c1 * x.min
+  return(c1 * x + c2)
+}
+n = 200
+x = runif(n, min = 0, max = 1)
+x1 = x + rnorm(n, 0, 0.05)
+x2 = x + rnorm(n, 0, 0.05)
+x3 = normalize(0.9 * x + rnorm(n, 0, .1))
+x4 = .85 * x + rnorm(n, 0, .1)
+x5 = normalize(0.5 * x + rnorm(n, 0, .1))
+y1 = function(x) x
+y2 = function(x) 10*(x-.25)^2
+y3 = function(x) -2 * x
+y4 = function(x) 40 * ((x-.2)^3 - (x-.2)^2) + 4
+y5 = function(x) -4 * cos(4*pi*x) * x + 4
+x.grid = seq(0, 1, .01)
+par(mfrow = c(2,3), oma = c(0, 0, 2, 0))
+plot(x.grid, y1(x.grid), type = "l")
+plot(x.grid, y2(x.grid), type = "l")
+plot(x.grid, y3(x.grid), type = "l")
+plot(x.grid, y4(x.grid), type = "l")
+plot(x.grid, y5(x.grid), type = "l")
+mtext("True partial effects", outer = TRUE, cex = 1.5)
+par(mfrow = c(1,1))
+y = y1(x1) + y2(x2) + y3(x3) + y4(x4) + y5(x5) + rnorm(n, 0, .1)
+dt = data.frame(y, x1, x2, x3, x4, x5)
+knitr::kable(cor(dt))
+```
+
+### Models
+
+We fit linear model, neural net, SVM and (to cover a tree method) gradient boosting.
+
+```{r fit-models}
+tsk = makeRegrTask(data = dt, target = "y")
+lm.lrn = makeLearner("regr.lm")
+lm.mod = train(lm.lrn, tsk)
+lm.mod$learner.model
+nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001, maxit = 1000,
+  trace = FALSE)
+nnet.mod = train(nnet.lrn, tsk)
+svm.lrn = makeLearner("regr.svm")
+svm.mod = train(svm.lrn, tsk)
+ntrees = 10000
+gbm.lrn = makeLearner("regr.gbm", n.trees = ntrees, interaction.depth = 1, shrinkage = .02)
+gbm.mod = train(gbm.lrn, tsk)
+```
+
+### LPD Linear Model
+
+```{r,fig.width=9}
+gridExtra::grid.arrange(
+  plotPD(computePD(lm.mod$learner.model, dt, "x1", l = 20)) + ggtitle("LPD, l=20"),
+  plotPD(computePD(lm.mod$learner.model, dt, "x1", l = 200)) + ggtitle("LPD, l = 200"),
+  plotPartialDependence(generatePartialDependenceData(lm.mod, tsk, "x1", n = 30,
+  individual = FALSE, derivative = FALSE)) + ggtitle("PD"),
+  ncol = 3)
+```
+
+LPD does not produce a straight line with slope equal to the coefficient of the linear model for low l.
+For *l = nrow(data)* LPD equals PD.
+
+```{r}
+l = 20
+gridExtra::grid.arrange(
+  plotPD(computePD(lm.mod$learner.model, dt, "x2", l = l)),
+  plotPD(computePD(lm.mod$learner.model, dt, "x3", l = l)),
+  plotPD(computePD(lm.mod$learner.model, dt, "x4", l = l)),
+  plotPD(computePD(lm.mod$learner.model, dt, "x5", l = l)),
+  ncol = 2)
+```
+
+#### Derivative linear model
+
+```{r}
+computePD(lm.mod$learner.model, dt, "x2", derivative = TRUE)$y.hat
+```
+
+Derivative "works" (returns same value for each grid point).
+
+### LPD neural net
+
+```{r}
+par(mfrow = c(1,1))
+plotPD(computePD(nnet.mod$learner.model, dt, "x5", l = 20, n = 50))
+plotPD(computePD(nnet.mod$learner.model, dt, "x5", wp = 2, n = 50))
+plotPD(computePD(nnet.mod$learner.model, dt, "x5", n = 100)) # wp=0 --> partial dependence
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5",
+  n = 100, individual = FALSE))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5",
+  n = 10, individual = TRUE))
+
+plotPD(computePD(nnet.mod$learner.model, dt, "x4", l = 20))
+plotPD(computePD(nnet.mod$learner.model, dt, "x4", wp = 1, n = 20))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x4", n = 100, individual = FALSE))
+plot(seq(-.1, 1, .05), y4(seq(-.1, 1, .05)), type = "l")
+
+plotPD(computePD(nnet.mod$learner.model, dt, "x2", l = 20, n = 50))
+plotPD(computePD(nnet.mod$learner.model, dt, "x2", wp = 1))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x2", n = 20, individual = FALSE))
+plot(seq(0, 1, .05), y2(seq(0, 1, .05)), type = "l")
+
+plotPD(computePD(nnet.mod$learner.model, dt, "x1", l = 20, n = 50))
+plotPD(computePD(nnet.mod$learner.model, dt, "x1", wp = 4))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x1", n = 100, individual = FALSE))
+plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x1", n = 10, individual = TRUE))
+plot(seq(0, 1, .05), y1(seq(0, 1, .05)), type = "l")
+```
+
+#### Derivative
+
+```{r}
+nnet.pred.fun = function(object, newdata) predict(object, newdata)
+gridExtra::grid.arrange(
+  plotPartialDependence(generatePartialDependenceData(nnet.mod, tsk, "x5", n = 50, derivative = TRUE)) +
+    scale_y_continuous(limits = c(-45,35)) + ggtitle("Partial Deriv"),
+  plotPD(computePD(nnet.mod$learner.model, dt, "x5", n = 50, l = 20, derivative = TRUE,
+    predict.fun = nnet.pred.fun)) +
+    scale_y_continuous(limits = c(-45,35)) + ggtitle("Local Partial Deriv"),
+  ncol = 2)
+```
+
+#### Partition
+
+```{r}
+# partition differences
+PD = computePD(nnet.mod$learner.model, dt, "x5", wp = 2)
+plotPD(PD)
+x.grid.dist = diff(PD$x.grid)[1]
+y.hat.diffs = diff(PD$y.hat) / x.grid.dist
+
+plot(PD$x.grid, PD$y.hat, type = "l")
+abline(v = partition(PD$x.grid[-length(PD$x.grid)] + x.grid.dist/2, y.hat.diffs, 5))
+
+# partition derivative
+PDeriv = computePD(nnet.mod$learner.model, dt, "x5", wp = 2, derivative = TRUE,
+  predict.fun = nnet.pred.fun)
+plotPD(PDeriv)
+
+plot(PD$x.grid, PD$y.hat, type = "l")
+abline(v = partition(PDeriv$x.grid, PDeriv$y.hat, 7))
+
+# partition ALE
+ALE = computeALE(nnet.mod$learner.model, dt, "x5", K = 100)
+
+plot(PD$x.grid, PD$y.hat, type = "l")
+plot(ALE$x, ALE$f, type = "l")
+abline(v = partition(ALE$x[-101], ALE$ale, 5), col = "red")
+abline(v = partition(ALE$x[-101], ALE$ale, 7, part.method = "cluster"))
+
+```
+
+### Gradient boosting
+
+```{r}
+gbm.pred.fun = function(object, newdata) predict(object, newdata, n.trees = 10000)
+plotPD(computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun))
+plotPD(computePD(gbm.mod$learner.model, dt, "x5", wp = 1, predict.fun = gbm.pred.fun))
+plotPD(computePD(gbm.mod$learner.model, dt, "x5", wp = 0, predict.fun = gbm.pred.fun))
+plotPartialDependence(generatePartialDependenceData(gbm.mod, tsk, "x5", n = 40, individual = FALSE))
+plotPartialDependence(generatePartialDependenceData(gbm.mod, tsk, "x5", n = 10, individual = TRUE))
+```
+
+#### Derivative
+
+```{r}
+computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun, derivative = TRUE)$y.hat
+
+gbm.Pderiv = generatePartialDependenceData(gbm.mod, tsk, "x5", n = 100, derivative = TRUE)
+gbm.Pderiv$data$y
+```
+
+Derivatives for Gradient Boosting always zero.
+
+#### Partition
+
+```{r}
+# LPD
+PD = computePD(gbm.mod$learner.model, dt, "x5", l = 20, predict.fun = gbm.pred.fun)
+plotPD(PD)
+x.grid.dist = diff(PD$x.grid)[1]
+y.hat.diffs = diff(PD$y.hat) / x.grid.dist
+plot(PD$x.grid, PD$y.hat, type = "l")
+abline(v = partition(PD$x.grid[-length(PD$x.grid)] + x.grid.dist/2, y.hat.diffs, 5))
+
+# PD
+PD = generatePartialDependenceData(gbm.mod, tsk, "x5", n = 100, individual = FALSE)
+plotPartialDependence(PD)
+x.grid.dist = diff(PD$data$x5)[1]
+y.hat.diffs = diff(PD$data$y) / x.grid.dist
+plot(PD$data$x5, PD$data$y, type = "l")
+abline(v = partition(PD$data$x5[-length(PD$data$x5)] + x.grid.dist/2, y.hat.diffs, 5))
+
+```

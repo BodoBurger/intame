@@ -1,0 +1,316 @@
+---
+title: "Average Marginal Effects"
+author: "Bodo Burger"
+date: "2018-06-06"
+output:
+  html_document: 
+    toc: yes
+  rmarkdown::html_vignette:
+    toc: yes
+---
+<!-- vignette: > -->
+<!--   %\VignetteIndexEntry{Average Marginal Effects} -->
+<!--   %\VignetteEngine{knitr::rmarkdown} -->
+<!--   %\VignetteEncoding{UTF-8} -->
+<!-- --- -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+  echo = TRUE, message = FALSE, warning = TRUE,
+  cache = TRUE, cache.path = "cache/average_marginal_effects/",
+  fig.cap = TRUE)
+library("intame")
+library("ame")
+library("ggplot2")
+library("mlr")
+theme_set(theme_light())
+```
+
+# Regression tasks (numeric target)
+
+## numeric features
+
+### (Roughly) Monotonic Relationship / Perceptible Trend
+
+One numeric feature x, relationship to target y is "overall" monotonic,
+non-linear, non-convex and stochastic (i.e. we add noise).
+
+```{r monotonic-dgp}
+set.seed(123)
+n = 100
+target.fun = function(x) (sin(x) + 1) * x + .2 * cos(x + 1) + 2 * x
+x1 = runif(n, 0, 6)
+x2 = runif(n, 100, 1000) # this feature has no influence on y
+eps = rnorm(n, 0, 1)
+y.true = target.fun(x1)
+y = y.true + eps
+df = data.frame(x1, x2, y)
+lm.mod = lm(y ~ ., data = df)
+poly12.mod = lm(y ~ poly(x1, 12, raw = TRUE) + x2, data = df)
+grid.x = data.frame(x1 = seq(0, 6, .01), x2 = mean(x2))
+df.plot = data.frame(x1 = grid.x$x1, true = target.fun(grid.x$x1),
+  fitlm = predict(lm.mod, newdata = grid.x),
+  fitpoly12 = predict(object = poly12.mod, newdata = grid.x))
+df.plot = reshape2::melt(df.plot, id.vars = "x1", variable.name = "type", 
+  value.name = "y")
+ggplot(data = df.plot, mapping = aes(x = x1, y = y, col = type, group = type)) + 
+  geom_line() +
+  geom_point(data = df, mapping = aes(x = x1, y = y), alpha = .3, 
+    inherit.aes = FALSE) +
+  ggtitle("True relationship vs observed data vs predicted values")
+```
+
+The AME for the poly12 model is higher than for the lm model.
+Although, the poly12 model nearly perfectly fits the *true effect*,
+a single number does not represent the marginal effect (ME) sufficiently,
+because the ME does vary significantly.
+
+```{r}
+lm.mod$coefficients
+(lm.ame = computeAME(lm.mod, data = df, c("x1", "x2")))
+(poly12.ame = computeAME(poly12.mod, df, c("x1", "x2")))
+p1 = plotAME(lm.mod, df, lm.ame, "y") + ggtitle("linear model")
+p2 = plotAME(poly12.mod, df, poly12.ame, "y") + ggtitle("poly12 model")
+gridExtra::grid.arrange(p1, p2, nrow = 2)
+```
+
+```{r, fig.cap="Red line: AME poly12. Green line: AME lm"}
+lm.coef = coef(lm.mod)
+poly12.ame = computeAME(poly12.mod, df, features = "x1")
+plotAME(poly12.mod, df, poly12.ame, "y") +
+  geom_abline(mapping = aes(slope = lm.coef[2], intercept = lm.coef[1]), 
+    color = "green") +
+  ggtitle("AME of lm and poly12")
+```
+
+#### "Individual marginal effect" (no aggregation)
+
+```{r}
+lm.ime = as.numeric(
+  computeAME(lm.mod, df, features = "x1", aggregate.fun = function(x) x))
+poly12.ime = as.numeric(
+  computeAME(poly12.mod, df, features = "x1", aggregate.fun = function(x) x))
+table(round(lm.ime, digits = 6))
+hist(poly12.ime, breaks = 50)
+poly12.y.hat = predict(poly12.mod, newdata = df)
+p1 = ggplot() + geom_point(aes(x = df$x1, y = poly12.ime)) +
+  xlab("x1") + ylab("AME") + ggtitle("AME")
+p2 = ggplot() + geom_point(aes(x = df$x1, y = poly12.y.hat)) +
+  xlab("x1") + ylab("y.hat") + ggtitle("Predicted values")
+gridExtra::grid.arrange(p1, p2, nrow = 2)
+```
+
+```{r}
+which(poly12.ime < -10) # find the outlier
+split.points = partition(df$x1, poly12.ime, 2)
+split.points = partition(df$x1[-74], poly12.ime[-74], 2) # ohne Ausreißer
+split.points = partition(df$x1[-74], poly12.ime[-74], 7) # ohne Ausreißer
+split.points = partition(df$x1[-74], poly12.ime[-74], 7, 
+  part.method = "cluster") # ohne Ausreißer
+
+ggplot(df, aes(x = x1, y = y)) + geom_point() +
+  geom_point(mapping = aes(x = df$x1, y = poly12.ime, col = "AME")) +
+  geom_point(aes(x = df$x1, y = poly12.y.hat, col = "y.hat")) +
+  geom_vline(xintercept = split.points) +
+  xlab("x1") + ylab("y.hat")
+```
+
+
+### Non-monotonic Relationship / No Trend
+
+```{r no-trend-dgp}
+set.seed(1215)
+n = 100
+target.fun = function(x) 5 * sin(2 * x) + 2 * cos(x + 1)
+x1 = runif(n, 0, 6)
+x2 = runif(n, 100, 1000) # this feature has no influence on y
+eps = rnorm(n, 0, 1)
+y.true = target.fun(x1)
+y = y.true + eps
+df = data.frame(x1, x2, y)
+lm.mod = lm(y ~ ., data = df)
+poly12.mod = lm(y ~ poly(x1, 12, raw = TRUE) + x2, data = df)
+grid.x = data.frame(x1 = seq(0, 6, .01), x2 = mean(x2))
+df.plot = data.frame(x1 = grid.x$x1, true = target.fun(grid.x$x1),
+  fitlm = predict(lm.mod, newdata = grid.x),
+  fitpoly12 = predict(object = poly12.mod, newdata = grid.x))
+df.plot = reshape2::melt(df.plot, id.vars = "x1", variable.name = "type",
+  value.name = "y")
+ggplot(data = df.plot, mapping = aes(x = x1, y = y, col = type, group = type)) +
+  geom_line() +
+  geom_point(data = df, mapping = aes(x = x1, y = y), alpha = .3,
+    inherit.aes = FALSE) +
+  ggtitle("True relationship vs observed data vs predicted values")
+```
+
+```{r}
+lm.mod
+(lm.ame = computeAME(lm.mod, df, c("x1", "x2")))
+(poly12.ame = computeAME(poly12.mod, df, c("x1", "x2")))
+p1 = plotAME(lm.mod, df, lm.ame, "y") + ggtitle("linear model")
+p2 = plotAME(poly12.mod, df, poly12.ame, "y") + ggtitle("poly12 model")
+gridExtra::grid.arrange(p1, p2, nrow = 2)
+```
+
+## many numeric features
+
+Example with many numeric features would be instructive.
+
+
+## "real" data
+
+```{r}
+df = getTaskData(fuelsubset.task)[ , 1:20]
+knitr::kable(df[1:5, 1:6], digits = 4)
+lm.mod = lm(heatan ~ ., data = df)
+lm.coefs = coef(lm.mod)[-1]
+lm.ame = computeAME(lm.mod, df, features = names(df)[-1])
+all.equal(as.numeric(lm.ame), as.numeric(lm.coefs))
+
+fuel.tsk = makeRegrTask(data = df, target = "heatan")
+rf.lrn = makeLearner("regr.randomForest")
+rf.mod.mlr = train(rf.lrn, fuel.tsk)
+computeAME(rf.mod.mlr, df, names(df)[-1])
+```
+
+Lots of zeros for RandomForest, calculating AMEs is problematic for
+tree-based methods.
+
+## numeric and categorical features
+
+```{r dgp-numeric-and-binary}
+n = 500
+bin1 = rbinom(n, 1, prob = .75)
+bin2 = (rbinom(n, 1, prob = .35) + 2) * 2
+cat1.map = setNames(c(0,-2,2,6), c("blue", "red2", "red", "green"))
+cat1 = sample(factor(cat1.map, labels = names(cat1.map)), n, replace = TRUE, 
+  prob = c(.25, .25, .25, .25))
+ord1.map = setNames(c(0,4,5,10,20), c("low", "midlow", "mid", "midhi", "high"))
+ord1 = sample(factor(ord1.map, labels = names(ord1.map)), n, replace = TRUE,
+  prob = c(.1, .2, .2, .3, .2))
+logic1 = sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(.45, .55))
+char1 = sample(c("A", "E", "I"), n, replace = TRUE, prob = c(.3, .4, .3))
+x1 = runif(n, 0, 1)
+x2 = runif(n, 0, 1)
+x3 = rnorm(n, -1, 1)
+x4 = runif(n, -.5, .5)
+eps = rnorm(n, 0, 2)
+# data generating process:
+y = .4 + 2.3 * bin1 + 2.2 * x1 + bin2 * x2 + 3 * x2 + 1.7 * x3^2 + x4 +
+  .1 * cat1.map[cat1] + .1 * ord1.map[ord1] + logic1 * 1.3 +
+  ifelse(char1 == "A", 0, ifelse(char1 == "E", -1, 1)) + eps
+df = data.frame(y, x1, x2, x3, x4, bin1 = factor(bin1), bin2 = factor(bin2), 
+  cat1, ord1, logic1 = as.factor(logic1), char1 = as.factor(char1))
+knitr::kable(head(df))
+```
+
+### Models
+
+We fit a linear model, Random Forest, Gradient Boosting:
+
+```{r}
+regr.tsk = makeRegrTask(data = df, target = "y")
+lm.lrn = makeLearner("regr.lm")
+lm.mod.mlr = train(lm.lrn, regr.tsk)
+rf.lrn = makeLearner("regr.randomForest")
+rf.mod.mlr = train(rf.lrn, regr.tsk)
+rf.pred = predict(rf.mod.mlr, regr.tsk)
+gbm.lrn = makeLearner("regr.gbm", n.trees = 200, interaction.depth = 10)
+gbm.mod.mlr = train(gbm.lrn, regr.tsk)
+gbm.pred = predict(gbm.mod.mlr, regr.tsk)
+```
+
+Training performance (TODO: replace by test performance)
+
+```{r}
+performance(predict(lm.mod.mlr, regr.tsk), list(mse, rsq, expvar))
+performance(rf.pred, list(mse, rsq, expvar))
+performance(gbm.pred, list(mse, rsq, expvar))
+```
+
+### Comparing AMEs
+
+```{r}
+pairs(df)
+cor(df[,1:5])
+```
+
+Features are uncorrelated. Recall the data generating process
+(additive, separable, but non-linear):
+
+```{r, eval=FALSE}
+y = .4 + 2.3 * bin1 + 2.2 * x1 + bin2 * x2 + 3 * x2 + 1.7 * x3^2 + x4 +
+  .1 * cat1.map[cat1] + .1 * ord1.map[ord1] + logic1 * 1.3 +
+  ifelse(char1 == "A", 0, ifelse(char1 == "E", -1, 1)) + eps
+```
+
+```{r}
+lm.mod.mlr$learner.model$coefficients[-1]
+computeAME(lm.mod.mlr, df, names(df)[-1])
+computeAME(rf.mod.mlr, df, names(df)[-1])
+computeAME(gbm.mod.mlr, df, names(df)[-1])
+```
+
+# Classification tasks
+
+## Binary classification
+
+### Logistic model
+
+```{r}
+spam.data = getTaskData(spam.task)
+knitr::kable(spam.data[1:5, 52:58])
+
+log.lrn = makeLearner("classif.logreg", predict.type = "prob")
+log.mod = train(log.lrn, spam.task)
+log.pred = predict(log.mod, task = spam.task)
+performance(log.pred, list(mmce))
+
+features = c("remove", "edu", "charExclamation")
+computeAME(log.mod, spam.data, features)
+computeAME(log.mod$learner.model, spam.data, features,
+  predict.fun = function(object, newdata)
+    predict(object, newdata = newdata, type = "response"))
+```
+
+### Random Forest
+
+```{r}
+rf.lrn = makeLearner("classif.randomForest", predict.type = "prob")
+rf.mod = train(rf.lrn, spam.task)
+rf.pred = predict(rf.mod, spam.task)
+performance(rf.pred, list(mmce))
+computeAME(rf.mod, spam.data, features)
+```
+
+### Boosting
+
+```{r}
+gbm.lrn = makeLearner("classif.gbm", predict.type = "prob",
+  n.trees = 200, interaction.depth = 10, distribution = "bernoulli")
+gbm.mod = train(gbm.lrn, spam.task)
+gbm.pred = predict(gbm.mod, spam.task)
+performance(gbm.pred, list(mmce))
+computeAME(gbm.mod, spam.data, features)
+computeAME(gbm.mod$learner.model, spam.data, features, 
+  predict.fun = function(object, newdata) 
+    predict(object, newdata = newdata, n.trees = 200, type = "response"))
+```
+
+### Partial dependence plots
+
+```{r pdp-binary-classif}
+log.pdp = generatePartialDependenceData(log.mod, spam.task, features)
+plotPartialDependence(log.pdp) +
+  ggtitle("Partial dependence for logistic regression (spam task)")
+gbm.pdp = generatePartialDependenceData(gbm.mod, spam.task, features)
+plotPartialDependence(gbm.pdp) +
+  ggtitle("Partial dependence for gbm (spam task)")
+```
+
+## Multiclass
+
+```{r}
+str(iris)
+knitr::kable(head(iris))
+```
