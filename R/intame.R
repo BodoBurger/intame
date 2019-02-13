@@ -1,4 +1,6 @@
-#' Compute AME given break points on the sample space of a feature
+#' Compute interval-based marginal effects
+#'
+#' Compute AME given break points on the sample space of a feature.
 #'
 #' @template arg_model
 #' @template arg_data
@@ -10,7 +12,7 @@
 #' @export
 #'
 #' @examples
-computeAMEInterval = function(model, data, feature, n.parts = 5, method = "ALE", breaks = NULL, ...) {
+intame = function(model, data, feature, n.parts = 5, method = "ALE", breaks = NULL, ...) {
 
   if (is.null(breaks)) {
     if (method == "ALE") {
@@ -32,7 +34,7 @@ computeAMEInterval = function(model, data, feature, n.parts = 5, method = "ALE",
   for (i in 1:l) {
     selection = x >= bounds[i] & x < bounds[i+1]
     data.interval = data[selection,]
-    AME[i] = AME::computeAME(model, data.interval, feature)[, feature]
+    AME[i] = ame::computeAME(model, data.interval, feature)[, feature]
     y.hat.mean[i] = mean(y.hat[selection])
     x.interval.average[i] = mean(x[selection])
   }
