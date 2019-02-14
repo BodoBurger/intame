@@ -28,7 +28,7 @@
 #' @examples
 computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
                      predict.fun = function(object, newdata) predict(object, newdata = newdata),
-                     multiclass = FALSE, derivative = FALSE) {
+                     grid.method = "uniform", multiclass = FALSE, derivative = FALSE) {
   if (n == "default") n = nrow(data)/5
   if (l == "default") {
     l = nrow(data)
@@ -37,7 +37,16 @@ computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
   if (l > nrow(data)) stop("l has to be smaller than the number of rows.")
 
   x = data[, feature]
-  x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n)
+  # grid.methods: "uniform", "quantile", "sample"
+  # TODO: arg check grid.method
+  if (grid.method == "uniform") {
+    x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n)
+  } else if (grid.method == "quantile") {
+    x.grid = c(min(x), as.numeric(quantile(x, seq(1/n, 1, length.out = n), type = 1)))
+    n = length(x.grid)
+  } else if (grid.method == "sample") {
+    x.grid = sort(sample(x, n))
+  } else stop("computePD: grid.method ", grid.method, " not supported.")
 
   if (multiclass) {
     y.hat.1 = predict.fun(model, newdata = data[1,])
