@@ -56,9 +56,11 @@ y = 4*x1 + y2(x2) + rnorm(n, 0, .5)
 df = data.frame(y, x1, x2)
 knitr::kable(head(df))
 print(cor(x1, x2))
+gridExtra::grid.arrange(
+  qplot(x1, 4*x1, geom = "line") + ggtitle("\"True effect\" for x1"),
+  qplot(x2, y2(x2), geom = "line") + ggtitle("\"True effect\" for x2"),
+  ncol=2)
 ```
-
-TODO: Print true reponses.
 
 ## Model - neural network
 
@@ -76,31 +78,35 @@ The blue line is created using loess regression.
 
 ## AME
 
+Definition:
+
+$$
+    \text{AME}_j = \frac{1}{n} \sum_{i=1}^{n} f_j(\mathbf{X}, \mathbf{\theta})
+$$
+
 ```{r}
 computeAME(nnet.mod, df, c("x1", "x2"))
 ```
 
-TODO: Formel AME
-
 AME for feature 1 corresponds to the "true" effect.
 For feature 2, AME is less meaningful because of the non-monotonic effect.
+
+![Solid: actual data points. Circles: points which are evaluated by the respective method. Evaluations of circles of the same color are aggregated except for the ICE Plot method that evaluates the points on each horizontal line separately.](figures/evaluation_points.png)
 
 ## Comparison of ALE and PDeriv
 
 ### Feature 1
 
 ```{r feature-1}
-ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", K = 50)
+ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", grid.size = 30)
 plot(ALE.x1, derivative = FALSE)
-plot(ALE.x1, derivative = TRUE)
 mean(ALE.x1$ale)
-plot(computePD(nnet.mod$learner.model, df, "x1", derivative = FALSE))
-PDeriv.x1 = computePD(nnet.mod$learner.model, df, "x1", derivative = TRUE)
-plot(PDeriv.x1)
+PD.x1 = computePD(nnet.mod$learner.model, df, "x1", grid.size = 30, grid.method = "quantile")
+plot(PD.x1)
+PDeriv.x1 = computePD(nnet.mod$learner.model, df, "x1", grid.size = 30,
+  grid.method = "quantile", derivative = TRUE)
 mean(PDeriv.x1$y.hat)
 ```
-
-TODO: PD uniform=FALSE
 
 Average of ALE nearly 4, while average of PDeriv slighty more off.
 Does this indicate ALE is better at representing the marginal effect?
@@ -108,10 +114,12 @@ Does this indicate ALE is better at representing the marginal effect?
 ### Feature 2
 
 ```{r feature-2}
-ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", K = 100)
-plot(ALE.x2, derivative = TRUE)
-PDeriv.x2 = computePD(nnet.mod$learner.model, df, "x2", derivative = TRUE)
-plot(PDeriv.x2)
+ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", grid.size = 30)
+plot(ALE.x2)
+PD.x2 = computePD(nnet.mod$learner.model, df, "x2", grid.size = 30, grid.method = "quantile")
+plot(PD.x2)
+PDeriv.x2 = computePD(nnet.mod$learner.model, df, "x2", grid.size = 30,
+  grid.method = "quantile", derivative = TRUE)
 # analytical derivation of the additive part of feature 2:
 y2_partial = function(x) 4 * sin(4*pi*x) * 4*pi * x - 4 * cos(4*pi*x)
 mean(y2_partial(x2))

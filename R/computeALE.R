@@ -17,30 +17,42 @@
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
-#' @param K number of intervals
+#' @param grid.size [\code{integer(1)}]\cr
+#'   Number of intervals/segments. Same as parameter K in ALEPlot package.
 #' @template arg_predict.fun
-#' @param multiclass=FALSE
+#' @param multiclass [\code{logical(1)}]\cr
+#'   If multiclassification task (TODO: try to infer this automatically).
 #' @param minbucket Not yet implemented.
 #'
-#' @return
+#' @return [\code{ALE}]
 #' @export
 #'
 #' @examples
-computeALE = function(model, data, feature, K = "default",
+computeALE = function(model, data, feature,
+                      grid.size = "default",
                       predict.fun = predict,
                       multiclass = FALSE, minbucket = 1) {
-  if (K == "default") K = nrow(data)/10
+  checkmate::assert_choice(feature, colnames(data))
+  checkmate::assertFunction(predict.fun, args = c("object"))
+
+  if (grid.size == "default") grid.size = nrow(data)/5
+  else checkmate::assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
+
+  checkmate::assertLogical(multiclass)
+
+  ##############################################################################
   x = data[, feature]
-  if (K >= length(x)-1) {
+  if (grid.size >= length(x)-1) {
+    warning("grid.size was set to length of feature.")
     z = sort(x)
   } else {
-    #z = as.numeric(quantile(x, seq(0, 1, length.out = K+1), type = 1))
-    z = c(min(x), as.numeric(quantile(x, seq(1/K, 1, length.out = K),
-      type = 1))) # c(min(), quantile()) necessary for K = n
+    z = c(min(x), as.numeric(quantile(x, seq(1/grid.size, 1,
+      length.out = grid.size), type = 1)))
+      # c(min(), quantile()) necessary for grid.size = n
   }
-  z = unique(z) # if K > nrow(data) or x has lots of non-unique values
-  K = length(z) - 1
-  # if K >= (n-1) the first two obs are assigned to the first interval
+  z = unique(z) # if grid.size > nrow(data) or x has lots of non-unique values
+  grid.size = length(z) - 1
+  # if grid.size >= (n-1) the first two obs are assigned to the first interval
   interval.indices = as.numeric(cut(x, breaks = z, include.lowest = TRUE))
   w = as.numeric(table(interval.indices))
 
@@ -55,33 +67,34 @@ computeALE = function(model, data, feature, K = "default",
   if (multiclass) { # multi-class
     nclass = ncol(y.hat.l)
     for (i in 1:nclass) {
-      #delta[1:K,i] = tapply(delta[,i], interval.indices, mean)
-      y.hat.l[1:K, i] = tapply(y.hat.l[,i], interval.indices, mean)
-      y.hat.u[1:K, i] = tapply(y.hat.u[,i], interval.indices, mean)
+      #delta[1:grid.size,i] = tapply(delta[,i], interval.indices, mean)
+      y.hat.l[1:grid.size, i] = tapply(y.hat.l[,i], interval.indices, mean)
+      y.hat.u[1:grid.size, i] = tapply(y.hat.u[,i], interval.indices, mean)
     }
-    y.hat.l = y.hat.l[1:K,]
-    y.hat.u = y.hat.u[1:K,]
+    y.hat.l = y.hat.l[1:grid.size,]
+    y.hat.u = y.hat.u[1:grid.size,]
     delta = y.hat.u - y.hat.l
-    #delta = delta[1:K, ]
+    #delta = delta[1:grid.size, ]
     #f = apply(rbind(y.hat.l[1, ], delta), 2, function(x) cumsum(x))
     f = apply(delta, 2, function(x) c(0, cumsum(x)))
-    f = f + matrix(y.hat.l[1,], K+1, nclass, byrow = TRUE)
-    #f = apply(f, 2, function(f) f - sum((f[1:K] + f[2:(K + 1)])/2 * w) / sum(w))
+    f = f + matrix(y.hat.l[1,], grid.size+1, nclass, byrow = TRUE)
+    #f = apply(f, 2, function(f) f - sum((f[1:grid.size] + f[2:(grid.size + 1)])/2 * w) / sum(w))
     ale = apply(delta, 2, function(x) x/diff(z))
     ale.plot.data = reshape2::melt(data = data.frame(x = z, f), id.vars = "x",
       variable.name = "class", value.name = "f")
     #ale.plot.data = reshape2::melt(data = data.frame(x = z[-length(z)], y.hat.l),
     #  id.vars = "x", variable.name = "class", value.name = "probability")
   } else {
-    delta = y.hat.u - y.hat.l # probably better (numerically) to do tapply on y.hat, see multiclass
+    delta = y.hat.u - y.hat.l
+    # probably better (numerically) to do tapply on y.hat, see multiclass
     delta = as.numeric(tapply(delta, interval.indices, mean))
     f = c(0, cumsum(delta))
-    f = f - sum((f[1:K] + f[2:(K + 1)])/2 * w) / sum(w)
+    f = f - sum((f[1:grid.size] + f[2:(grid.size + 1)])/2 * w) / sum(w)
     ale = delta/diff(z)
     ale.plot.data = data.frame(x = z, f)
   }
   ale.x = z[-length(z)]
-  return(structure(list(x = z, f = f, K = K, i = interval.indices,
+  return(structure(list(x = z, f = f, grid.size = grid.size, i = interval.indices,
                         ale = ale, ale.x = ale.x,
                         ale.plot.data = ale.plot.data,
                         multiclass = multiclass, feature = feature),
@@ -92,27 +105,28 @@ computeALE = function(model, data, feature, K = "default",
 #' Create ALE Plot
 #'
 #' @param ALE object created by \code{\link{computeALE}}
+#' @param title Plot title.
 #' @param derivative If TRUE, plot ALEs, otherwise plot predictions at
 #'        interval limits.
 #'
-#' @return \code{ggplot}
+#' @return \code{ggplot2} plot object
 #' @export
-plot.ALE = function(x, derivative = FALSE, ...) {
+plot.ALE = function(x, title = "ALE Plot", derivative = FALSE, ...) {
   ALE = x
   if (ALE$multiclass) {
     ggplot(data = ALE$ale.plot.data,
       aes(x = x, y = f, group = class, col = class)) +
       geom_line() + geom_point() +
-      xlab(ALE$feature)
+      xlab(ALE$feature) + ggtitle(title)
   } else {
     if (derivative) {
       ggplot(data.frame(x = ALE$ale.x, ALE = ALE$ale), aes(x = x, y = ALE)) +
         geom_line() + geom_point() +
-        xlab(ALE$feature)
+        xlab(ALE$feature) + ggtitle("ALE Plot (derivative)")
     } else {
       ggplot(data = ALE$ale.plot.data, aes(x = x, y = f)) +
         geom_line() + geom_point() +
-        xlab(ALE$feature)
+        xlab(ALE$feature) + ggtitle(title)
     }
   }
 }
