@@ -1,6 +1,9 @@
 wip/
 inst/doc
 
+# Don't track .Rd files (remove this when publishing)
+man/*.Rd
+
 # History files
 .Rhistory
 .Rapp.history
