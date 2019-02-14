@@ -92,26 +92,27 @@ computeALE = function(model, data, feature, K = "default",
 #' Create ALE Plot
 #'
 #' @param ALE object created by \code{\link{computeALE}}
-#' @param derivative=FALSE If TRUE, plot ALEs, otherwise plot predictions at
+#' @param derivative If TRUE, plot ALEs, otherwise plot predictions at
 #'        interval limits.
 #'
 #' @return \code{ggplot}
 #' @export
-plot.ALE = function(ALE, derivative = FALSE) {
+plot.ALE = function(x, derivative = FALSE, ...) {
+  ALE = x
   if (ALE$multiclass) {
-    ggplot2::ggplot(data = ALE$ale.plot.data,
+    ggplot(data = ALE$ale.plot.data,
       aes(x = x, y = f, group = class, col = class)) +
-      ggplot2::geom_line() + ggplot2::geom_point() +
-      ggplot2::xlab(ALE$feature)
+      geom_line() + geom_point() +
+      xlab(ALE$feature)
   } else {
     if (derivative) {
       ggplot(data.frame(x = ALE$ale.x, ALE = ALE$ale), aes(x = x, y = ALE)) +
         geom_line() + geom_point() +
         xlab(ALE$feature)
     } else {
-      ggplot2::ggplot(data = ALE$ale.plot.data, aes(x = x, y = f)) +
-        ggplot2::geom_line() + ggplot2::geom_point() +
-        ggplot2::xlab(ALE$feature)
+      ggplot(data = ALE$ale.plot.data, aes(x = x, y = f)) +
+        geom_line() + geom_point() +
+        xlab(ALE$feature)
     }
   }
 }

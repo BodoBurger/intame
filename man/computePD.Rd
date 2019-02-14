@@ -6,7 +6,8 @@
 \usage{
 computePD(model, data, feature, n = "default", l = "default", wp = 0,
   predict.fun = function(object, newdata) predict(object, newdata =
-  newdata), multiclass = FALSE, derivative = FALSE)
+  newdata), grid.method = "uniform", multiclass = FALSE,
+  derivative = FALSE)
 }
 \arguments{
 \item{model}{[\code{\link[mlr]{WrappedModel}} | \code{any}]\cr

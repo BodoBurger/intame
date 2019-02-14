@@ -34,7 +34,7 @@ computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
     l = nrow(data)
     lokal = FALSE
   } else lokal = TRUE
-  assert_that(l <= nrow(data))
+  if (l > nrow(data)) stop("l has to be smaller than the number of rows.")
 
   x = data[, feature]
   x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = n)
@@ -102,15 +102,23 @@ computePD = function(model, data, feature, n = "default", l = "default", wp = 0,
 #'
 #' @return \code{ggplot}
 #' @export
-plot.PD = function(PD) {
+plot.PD = function(x, ...) {
+  PD = x
   if (PD$multiclass) {
-    ggplot2::ggplot(data = PD$plot.data,
+    ggplot(data = PD$plot.data,
       aes(x = x, y = probability, group = class, col = class)) +
-      ggplot2::geom_line() + ggplot2::geom_point() +
+      geom_line() + geom_point() +
       xlab(PD$feature)
   } else {
-    ggplot2::ggplot(data = PD$plot.data, mapping = aes(x, y.hat)) +
-      ggplot2::geom_line() + ggplot2::geom_point() +
+    ggplot(data = PD$plot.data, mapping = aes(x, y.hat)) +
+      geom_line() + geom_point() +
       xlab(PD$feature)
   }
+}
+
+normalize = function(x, lower.bound = 0, upper.bound = 1) {
+  x.min = min(x)
+  c1 = (upper.bound - lower.bound)/(max(x) - x.min)
+  c2 = lower.bound - c1 * x.min
+  return(c1 * x + c2)
 }

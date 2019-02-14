@@ -3,7 +3,7 @@
 #' @param AME
 #' @param data data.frame
 #' @param target character(1) Name of target variable.
-#' @param model
+#' @param model model object
 #'
 #' @section TODOS:
 #' \itemize{
@@ -14,7 +14,8 @@
 #' }
 #'
 #' @export
-plot.AME = function(AME, data, target, model = NA) {
+plot.AME = function(x, data, target, model = NA, ...) {
+  AME = x
   features = names(AME)
   ame = as.numeric(AME)
   names(ame) = features
@@ -28,8 +29,8 @@ plot.AME = function(AME, data, target, model = NA) {
     data.plot[data.plot$feature==feature, "y.ame"] = intercepts[feature] +
       data.plot[data.plot$feature == feature, "x"] * ame[feature]
   }
-  ggplot2::ggplot(data = data.plot, mapping = aes(x = x)) +
-    ggplot2::geom_point(mapping = aes(y = y), alpha = .3) +
-    ggplot2::geom_line(mapping = aes(y = y.ame), col = "red") +
-    ggplot2::facet_wrap(~ feature, scales = "free_x")
+  ggplot(data = data.plot, mapping = aes(x = x)) +
+    geom_point(mapping = aes(y = y), alpha = .3) +
+    geom_line(mapping = aes(y = y.ame), col = "red") +
+    facet_wrap(~ feature, scales = "free_x")
 }

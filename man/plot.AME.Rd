@@ -4,14 +4,14 @@
 \alias{plot.AME}
 \title{Visualize AME feature-wise}
 \usage{
-\method{plot}{AME}(AME, data, target, model = NA)
+\method{plot}{AME}(x, data, target, model = NA, ...)
 }
 \arguments{
 \item{data}{data.frame}
 
 \item{target}{character(1) Name of target variable.}
 
-\item{model}{}
+\item{model}{model object}
 }
 \description{
 Visualize AME feature-wise

@@ -2,27 +2,30 @@ Package: intame
 Type: Package
 Title: Calculate Interval-Based Marginal Effects
 Version: 0.0.0.9000
-Author@R:
+Authors@R:
     person("Bodo", "Burger", email = "bododata@gmail.com", role = c("aut", "cre"))
 Description: Splits the feature space into several intervals of similar
     marginal effects. This improves the validity when calculating Average Marginal
     Effects on non-linear and/or non-monotonic response functions.
     Further, it helps the interpretation of feature effect plots (PDP, ICE, ALE).
 Depends:
-    R (>= 3.5.2)
+    R (>= 3.5)
 Imports:
     ame,
-    assertthat,
-    BBmisc,
     checkmate,
-    ggplot2
+    ggplot2,
+    numDeriv,
+    reshape2,
+    rpart,
+    stats,
+    utils
 Suggests:
     ALEPlot,
     testthat,
     knitr,
     mlr,
     rmarkdown
-License: BSD-3
+License: BSD_3_clause + file LICENSE
 URL: https://github.com/BodoBurger/intame
 BugReports: https://github.com/BodoBurger/intame/issues
 Encoding: UTF-8

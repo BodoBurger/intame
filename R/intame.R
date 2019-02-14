@@ -57,16 +57,17 @@ intame = function(model, data, feature, n.parts = 5, method = "ALE", breaks = NU
 }
 
 #' @export
-print.intame = function(x) {
+print.intame = function(x, ...) {
   print(x$AME)
 }
 
+# TODO: check char length of interval
 #' @export
-summary.intame = function(x) {
-  cat("# Interval-based Marginal Effects for", x$feature, "#\n\n")
+summary.intame = function(object, ...) {
+  cat("# Interval-based Marginal Effects for", object$feature, "#\n\n")
   cat(format("Interval", width = 14, justify = "right"), " | Average Marginal Effect\n", sep = "")
-  for (i in seq_along(x$AME)) {
-    cat(format(names(x$AME)[i], width = 14, justify = "right"), " | ", x$AME[i], "\n", sep = "")
+  for (i in seq_along(object$AME)) {
+    cat(format(names(object$AME)[i], width = 14, justify = "right"), " | ", object$AME[i], "\n", sep = "")
   }
   cat("\n")
 }
@@ -78,15 +79,15 @@ summary.intame = function(x) {
 #' @param x [\code{intame}]
 #'
 #' @export
-plot.intame = function(x) {
+plot.intame = function(x, ...) {
   AME = x$AME
   x.0 = x$x.interval.average
   y.0 = x$y.hat.mean
   bounds = x$bounds
-  p = ggplot2::ggplot() +
-    ggplot2::geom_point(mapping = aes(x$x, x$y.hat), pch = 16, alpha = .2)
+  p = ggplot() +
+    geom_point(mapping = aes(x$x, x$y.hat), pch = 16, alpha = .2)
   for(i in 1:(length(bounds)-1)) {
-    p = p + ggplot2::geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] - (x.0[i] - bounds[i]) * AME[i],
+    p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] - (x.0[i] - bounds[i]) * AME[i],
       y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])), col = "green", inherit.aes = FALSE)
   }
   return(p)

@@ -11,7 +11,7 @@
 #'
 #' @param model
 #' @param data/task
-#' @param feature
+#' @param feature Name of the feature
 #'
 #' @return \code{ggplot}
 #' @export
@@ -43,7 +43,7 @@ plotPrediction.default = function(model, data, feature, predict.fun = predict, l
 
 #' @export
 plotPrediction.WrappedModel = function(model, task, feature, ...) {
-  data = getTaskData(task)
-  predict.fun = function(model, newdata = data) getPredictionResponse(predict(model, newdata = data))
+  data = mlr::getTaskData(task)
+  predict.fun = function(model, newdata = data) mlr::getPredictionResponse(predict(model, newdata = data))
   plotPrediction.default(model, data, feature, predict.fun = predict.fun, ...)
 }

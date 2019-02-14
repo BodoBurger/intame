@@ -4,7 +4,7 @@
 \alias{plot.PD}
 \title{Plot partial dependence}
 \usage{
-\method{plot}{PD}(PD)
+\method{plot}{PD}(x, ...)
 }
 \arguments{
 \item{PD}{object created by \code{\link{computePD}}}

@@ -4,7 +4,7 @@
 \alias{plot.intame}
 \title{Visualize the result of intame}
 \usage{
-\method{plot}{intame}(x)
+\method{plot}{intame}(x, ...)
 }
 \arguments{
 \item{x}{[\code{intame}]}

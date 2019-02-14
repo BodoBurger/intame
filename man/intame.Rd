@@ -4,8 +4,9 @@
 \alias{intame}
 \title{Compute interval-based marginal effects}
 \usage{
-intame(model, data, feature, n.parts = 5, method = "ALE",
-  breaks = NULL, ...)
+intame(model, data, feature, n.parts = 5,
+  predict.fun = function(object, newdata) predict(object, newdata),
+  method = "ALE", breaks = NULL, ...)
 }
 \arguments{
 \item{model}{[\code{\link[mlr]{WrappedModel}} | \code{any}]\cr

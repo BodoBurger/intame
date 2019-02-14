@@ -7,7 +7,7 @@
 plotPrediction(model, ...)
 }
 \arguments{
-\item{feature}{}
+\item{feature}{Name of the feature}
 }
 \value{
 \code{ggplot}

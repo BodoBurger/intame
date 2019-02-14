@@ -4,13 +4,13 @@
 \alias{plot.ALE}
 \title{Create ALE Plot}
 \usage{
-\method{plot}{ALE}(ALE, derivative = FALSE)
+\method{plot}{ALE}(x, derivative = FALSE, ...)
 }
 \arguments{
-\item{ALE}{object created by \code{\link{computeALE}}}
-
-\item{derivative=FALSE}{If TRUE, plot ALEs, otherwise plot predictions at
+\item{derivative}{If TRUE, plot ALEs, otherwise plot predictions at
 interval limits.}
+
+\item{ALE}{object created by \code{\link{computeALE}}}
 }
 \value{
 \code{ggplot}
