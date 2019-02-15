@@ -148,6 +148,13 @@ computePD = function(model, data, feature,
                    comment = "Partial Dependence"))
 }
 
+#' @export
+print.PD = function(x, ...) {
+  values = x$y.hat
+  names(values) = round(x$x.grid, digits = 5)
+  print(values)
+}
+
 #' Plot partial dependence
 #'
 #' @param x PD object created by \code{\link{computePD}}

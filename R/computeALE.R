@@ -119,6 +119,13 @@ computeALE = function(model, data, feature,
                    comment = "Accumulated Local Effect"))
 }
 
+#' @export
+print.ALE = function(x, ...) {
+  ale.values = x$ale
+  names(ale.values) = round(x$ale.x, digits = 5)
+  print(ale.values)
+}
+
 #' Create ALE Plot
 #'
 #' @param x object created by \code{\link{computeALE}}
