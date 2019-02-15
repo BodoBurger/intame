@@ -42,11 +42,12 @@ intame = function(model, data, feature,
   x = data[, feature]
   y.hat = predict.fun(model, newdata = data)
   bounds = unique(c(min(x), sort(breaks), max(x) + 0.00001))
-  l = length(bounds) - 1
-  AME = numeric(l)
-  y.hat.mean = numeric(l)
-  x.interval.average = numeric(l)
-  for (i in 1:l) {
+  if (length(bounds)-1 < intervals) message("Found less than ", intervals, " intervals.")
+  intervals = length(bounds) - 1
+  AME = numeric(intervals)
+  y.hat.mean = numeric(intervals)
+  x.interval.average = numeric(intervals)
+  for (i in 1:intervals) {
     selection = x >= bounds[i] & x < bounds[i+1]
     data.interval = data[selection,]
     AME[i] = ame::computeAME(model, data.interval, feature,
@@ -55,9 +56,10 @@ intame = function(model, data, feature,
     x.interval.average[i] = mean(x[selection])
   }
   bounds.rounded = round(bounds, digits = 3)
-  interval.desc = character(l)
-  interval.desc[l] = paste0("[", bounds.rounded[l-1], ", ", bounds.rounded[l], "]")
-  for (i in 1:(l-1)) {
+  interval.desc = character(intervals)
+  interval.desc[intervals] = paste0("[", bounds.rounded[intervals], ", ",
+    bounds.rounded[intervals+1], "]")
+  for (i in 1:(intervals-1)) {
     interval.desc[i] = paste0("[", bounds.rounded[i], ", ", bounds.rounded[i+1], ")")
   }
   return(structure(list(AME = setNames(AME, interval.desc),
