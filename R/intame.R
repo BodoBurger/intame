@@ -42,7 +42,7 @@
 #' plot(AME.x2)
 intame = function(model, data, feature,
                   intervals = 5,
-                  predict.fun = predict,
+                  predict.fun = function(object, newdata) predict(object, newdata),
                   method = "ALE", breaks = NULL, ...) {
   checkmate::assert_choice(feature, colnames(data))
   checkmate::assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
@@ -123,8 +123,9 @@ plot.intame = function(x, ...) {
   p = ggplot() +
     geom_point(mapping = aes(x$x, x$y.hat), pch = 16, alpha = .2)
   for(i in 1:(length(bounds)-1)) {
-    p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] - (x.0[i] - bounds[i]) * AME[i],
-      y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])), col = "green", inherit.aes = FALSE)
+    p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] -
+      (x.0[i] - bounds[i]) * AME[i], y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])),
+      col = "green", inherit.aes = FALSE)
   }
   return(p)
 }
