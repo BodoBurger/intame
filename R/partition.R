@@ -1,9 +1,11 @@
-#' Generate partitions with "similar" derivative
+#' Partition x based on y
 #'
-#'
-#' @param x
-#' @param y
-#' @param n.parts
+#' @param x [\code{numeric}]\cr
+#'   Partitioned feature. Feature that is divided into segments on basis of
+#'   the values of feature \code{y}.
+#' @param y [\code{numeric}]\cr
+#'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
+#' @param intervals [\code{integer}]\cr Number of intervals.
 #' @param part.method c("CART", "cluster")
 #'
 #' @section TODOs:
@@ -16,10 +18,30 @@
 #' @export
 #'
 #' @examples
-partition = function(x, y, n.parts, part.method="CART") {
-  if (part.method == "CART") return(partitionCART(x, y, (n.parts-1)))
-  #else if (part.method == "MOB") return(partitionMOB(x, y, n.parts))
-  else if (part.method == "cluster") return(partitionCluster(x, y, n.parts))
+#' library(ggplot2)
+#' set.seed(0815)
+#' n = 6
+#' x = sample(n) + 1.5
+#' y = runif(n, 0, 10)
+#' df = data.frame(x, y)
+#' breaks.rpart = partition(df$x, df$y, intervals = 4)
+#' breaks.cluster = partition(df$x, df$y, intervals = 4,
+#'   part.method = "cluster")
+#' ggplot() +
+#'   geom_point(data=df, aes(x = x, y = y)) +
+#'   geom_vline(aes(xintercept = breaks.rpart-.03,
+#'     color = "rpart")) +
+#'   geom_vline(aes(xintercept = breaks.cluster+.03,
+#'     color = "cluster"))
+partition = function(x, y, intervals, part.method="CART") {
+  checkmate::assert_numeric(x)
+  checkmate::assert_numeric(y)
+  if (length(x) != length(y)) stop("x and y have to have the same length.")
+  checkmate::assertIntegerish(intervals)
+
+  if (part.method == "CART") return(partitionCART(x, y, (intervals-1)))
+  #else if (part.method == "MOB") return(partitionMOB(x, y, intervals))
+  else if (part.method == "cluster") return(partitionCluster(x, y, intervals))
   else stop("Partition method \'", part.method, "\' not implemented.")
 }
 
@@ -28,7 +50,14 @@ partition = function(x, y, n.parts, part.method="CART") {
   #TODO
 #}
 
-#' Use CART algorithm
+#' Partition using CART algorithm
+#'
+#' @param x [\code{numeric}]\cr
+#'   Partitioned feature. Feature that is divided into segments on basis of
+#'   the values of feature \code{y}.
+#' @param y [\code{numeric}]\cr
+#'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
+#' @param max.splits Upper limit to applied splits on feature space.
 partitionCART = function(x, y, max.splits) {
   mod = rpart::rpart(y ~ x, cp = 0, maxcompete = 0,
     minsplit = 1, minbucket = 1, xval = 0, maxsurrogate = 0)
@@ -39,14 +68,21 @@ partitionCART = function(x, y, max.splits) {
 
 #' Clustering-like method
 #'
-#' @param x
-#' @param y
-#' @param n.parts
-#' @param eval.fun
+#' Iteratively group neighboring points of x based on the evaluation function
+#' that is applied values of y.
+#'
+#' Difference to "standard" clustering is that a feature is clustered
+#' on basis of values of another feature.
+#'
+#' @param x [\code{numeric}]\cr
+#'   Partitioned feature. Feature that is divided into segments on basis of
+#'   the values of feature \code{y}.
+#' @param y [\code{numeric}]\cr
+#'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
+#' @param n.parts [\code{integer}] Number of intervals.
+#' @param eval.fun [\code{function}]\cr
+#'   Method
 partitionCluster = function(x, y, n.parts, eval.fun = absDiffMean) {
-  checkmate::assertNumeric(x)
-  checkmate::assertNumeric(y)
-  checkmate::assertIntegerish(n.parts)
   if (n.parts < 2) stop("\'n.pars\' has to be greater equal 2!")
 
   s = sort(x, index.return=TRUE)
@@ -54,10 +90,9 @@ partitionCluster = function(x, y, n.parts, eval.fun = absDiffMean) {
   intervals = lapply(s$x, function(x) c(x, x))
   while(length(yp) > n.parts) {
     i = which.min(eval.fun(yp))
-    ii = c(i, i+1)
     intervals[[i]] = c(intervals[[i]][1], intervals[[i+1]][2])
     intervals[[i+1]] = NULL
-    yp[[i]] = unlist(yp[ii])
+    yp[[i]] = unlist(yp[c(i, i+1)])
     yp[i+1] = NULL
   }
   split.points = vapply(seq.int(1, length(intervals)-1),
@@ -67,7 +102,8 @@ partitionCluster = function(x, y, n.parts, eval.fun = absDiffMean) {
 
 #' Absolute values of differences of means of succeeding elements
 #'
-#' Calculate mean for every element of the list, calculate the differences between succeeding means,
+#' Calculate mean for every element of the list,
+#' calculate the differences between succeeding means,
 #' and return absolute values of these differences.
 #'
 #' @param y list of numerical vectors

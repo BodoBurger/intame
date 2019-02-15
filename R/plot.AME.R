@@ -1,9 +1,10 @@
 #' Visualize AME feature-wise
 #'
-#' @param AME
+#' @param x object created by \code{\link[ame]{computeAME}}
 #' @param data data.frame
 #' @param target character(1) Name of target variable.
 #' @param model model object
+#' @param ... ignored
 #'
 #' @section TODOS:
 #' \itemize{

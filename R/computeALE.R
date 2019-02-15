@@ -28,6 +28,23 @@
 #' @export
 #'
 #' @examples
+#' ## Replication of example 2 of ?ALEPlot::ALEPlot
+#' if (require(nnet) && require(ggplot2) && require(gridExtra)) {
+#'   n = 1000
+#'   x1 = runif(n, 0, 1)
+#'   x2 = runif(n, 0, 1)
+#'   x3 = runif(n, 0, 1)
+#'   y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
+#'   df = data.frame(y, x1, x2, x3)
+#'   nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
+#'     decay=0.01, maxit = 1000, trace = FALSE)
+#'   predict.fun = function(X.model, newdata)
+#'     as.numeric(predict(object, newdata))
+#'   p1 = plot(computeALE(nnet.fit, df, feature="x1", grid.size=50))
+#'   p2 = plot(computeALE(nnet.fit, df, feature="x2", grid.size=50))
+#'   p3 = plot(computeALE(nnet.fit, df, feature="x3", grid.size=50))
+#'   grid.arrange(p1, p2, p3, ncol=2)
+#' }
 computeALE = function(model, data, feature,
                       grid.size = "default",
                       predict.fun = predict,
@@ -104,10 +121,11 @@ computeALE = function(model, data, feature,
 
 #' Create ALE Plot
 #'
-#' @param ALE object created by \code{\link{computeALE}}
+#' @param x object created by \code{\link{computeALE}}
 #' @param title Plot title.
 #' @param derivative If TRUE, plot ALEs, otherwise plot predictions at
 #'        interval limits.
+#' @param ... ignored
 #'
 #' @return \code{ggplot2} plot object
 #' @export

@@ -9,14 +9,11 @@
 #'   \item support multiclass (see lpd_motivation for an example)
 #' }
 #'
-#' @param model
-#' @param data/task
-#' @param feature Name of the feature
+#' @param model Model object. Object created by some fitting algorithm.
+#' @param ... Passed on to S3 methods
 #'
 #' @return \code{ggplot}
 #' @export
-#'
-#' @examples
 plotPrediction = function(model, ...) {
   UseMethod("plotPrediction")
 }

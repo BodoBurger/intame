@@ -36,6 +36,24 @@
 #' @export
 #'
 #' @examples
+#' ## Replication of example 2 of ?ALEPlot::ALEPlot,
+#' ## but using Partial Dependence
+#' if (require(nnet) && require(ggplot2) && require(gridExtra)) {
+#'   n = 1000
+#'   x1 = runif(n, 0, 1)
+#'   x2 = runif(n, 0, 1)
+#'   x3 = runif(n, 0, 1)
+#'   y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
+#'   df = data.frame(y, x1, x2, x3)
+#'   nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
+#'     decay=0.01, maxit = 1000, trace = FALSE)
+#'   predict.fun = function(X.model, newdata)
+#'     as.numeric(predict(object, newdata))
+#'   p1 = plot(computePD(nnet.fit, df, feature="x1", grid.size=50))
+#'   p2 = plot(computePD(nnet.fit, df, feature="x2", grid.size=50))
+#'   p3 = plot(computePD(nnet.fit, df, feature="x3", grid.size=50))
+#'   grid.arrange(p1, p2, p3, ncol=2)
+#' }
 computePD = function(model, data, feature,
                      grid.size = "default", grid.method = "uniform",
                      predict.fun = function(object, newdata) predict(object, newdata = newdata),
@@ -134,6 +152,7 @@ computePD = function(model, data, feature,
 #'
 #' @param x PD object created by \code{\link{computePD}}
 #' @param title [\code{character}] Plot title.
+#' @param ... ignored
 #'
 #' @return \code{ggplot2} plot object
 #' @export

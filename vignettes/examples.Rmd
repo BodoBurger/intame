@@ -1,0 +1,159 @@
+---
+title: "Examples for all package functions"
+author: "Bodo Burger"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Examples for all package functions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(intame)
+library(ggplot2)
+set.seed(4218)
+theme_set(theme_light())
+```
+
+## `intame()`
+
+### Basic example
+
+```{r}
+library(nnet)
+set.seed(4219)
+n = 500
+x = runif(n, min = 0, max = 1)
+x1 = runif(n, min=0, max=1) + .5*x
+x2 = runif(n, min=0, max=1) + .5*x
+y2 = function(x) -4 * cos(4*pi*x) * x + 4
+y = 4*x1 + y2(x2) + rnorm(n, 0, .5)
+df = data.frame(y, x1, x2)
+nnet.mod = nnet(y ~ ., df, size = 20, linout = TRUE,
+  decay = 0.0001, maxit = 1000, trace = FALSE)
+AME.x1 = intame(nnet.mod, df, "x1", intervals = 2)
+AME.x1
+plot(AME.x1)
+AME.x2 = intame(nnet.mod, df, "x2")
+AME.x2
+plot(AME.x2)
+```
+
+### Binary classification with spam dataset
+
+```{r, warning=FALSE}
+spam.data = mlr::getTaskData(mlr::spam.task)
+spam.fit = glm(type ~ ., data = spam.data, family = binomial(link = "logit"))
+spam.predict = function(object, newdata) predict(object, newdata, type = "response")
+
+feat.select = c("charDollar", "hpl", "people") 
+spam.fit$coefficients[feat.select]
+ame::computeAME(spam.fit, spam.data, feat.select, predict.fun = spam.predict)
+
+intame.charDollar = intame(spam.fit, spam.data, "charDollar", intervals = 5,
+  predict.fun = spam.predict, method = "ALE")
+summary(intame.charDollar)
+plot(intame.charDollar)
+
+plot(computeALE(spam.fit, spam.data, "charDollar", predict.fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "charDollar", grid.size = 50,
+  predict.fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "hpl", grid.size = 100,
+  predict.fun = spam.predict))
+plot(computeALE(spam.fit, spam.data, "people", grid.size = 100,
+  predict.fun = spam.predict))
+```
+
+## `computePD()`
+
+### Regression example using nnet
+
+```{r computePD-nnet}
+require(nnet)
+require(gridExtra)
+n = 1000
+x1 = runif(n, 0, 1)
+x2 = runif(n, 0, 1)
+x3 = runif(n, 0, 1)
+y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
+df = data.frame(y, x1, x2, x3)
+nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
+  decay=0.01, maxit = 1000, trace = FALSE)
+p1 = plot(computePD(nnet.fit, df, feature="x1", grid.size=50))
+p2 = plot(computePD(nnet.fit, df, feature="x2", grid.size=50))
+p3 = plot(computePD(nnet.fit, df, feature="x3", grid.size=50))
+grid.arrange(p1, p2, p3, ncol=2)
+```
+
+## `computeALE()`
+
+### Regression example using nnet
+
+```{r}
+require(nnet)
+require(ggplot2)
+require(gridExtra)
+n = 1000
+x1 = runif(n, 0, 1)
+x2 = runif(n, 0, 1)
+x3 = runif(n, 0, 1)
+y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
+df = data.frame(y, x1, x2, x3)
+nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
+  decay=0.01, maxit = 1000, trace = FALSE)
+predict.fun = function(object, newdata)
+  as.numeric(predict(object, newdata, type="raw"))
+p1 = plot(computeALE(nnet.fit, df, feature="x1", grid.size=50,
+  predict.fun = predict.fun))
+p2 = plot(computeALE(nnet.fit, df, feature="x2", grid.size=50,
+  predict.fun = predict.fun))
+p3 = plot(computeALE(nnet.fit, df, feature="x3", grid.size=50,
+  predict.fun = predict.fun))
+grid.arrange(p1, p2, p3, ncol=2)
+```
+
+## `partition()`
+
+### Toy Example
+
+```{r}
+set.seed(0815)
+n = 6
+x = sample(n) + 1.5
+y = runif(n, 0, 10)
+df = data.frame(x, y)
+breaks.rpart = partition(df$x, df$y, intervals = 4)
+breaks.cluster = partition(df$x, df$y, intervals = 4,
+  part.method = "cluster")
+ggplot() + 
+  geom_point(data=df, aes(x = x, y = y)) +
+  geom_vline(aes(xintercept = breaks.rpart-.03,
+    color = "rpart")) +
+  geom_vline(aes(xintercept = breaks.cluster+.03,
+    color = "cluster"))
+```
+
+### More complex example
+
+```{r}
+set.seed(123)
+n = 100
+x = runif(n, 0, 1000)
+y = x * sin(.01*x) + rnorm(n, 0, 10)
+df = data.frame(x, y)
+poly12.mod = lm(y ~ poly(x, 12, raw = TRUE), data = df)
+me = derivative(x, "x", df, poly12.mod)
+breaks.rpart = partition(df$x, me, 5)
+breaks.cluster = partition(df$x, me, 5, part.method = "cluster")
+ggplot() + geom_line(data=df, mapping=aes(x = x, y = y)) +
+  geom_vline(aes(xintercept = breaks.rpart+3, color = "rpart")) +
+  geom_vline(aes(xintercept = breaks.cluster-3, color = "cluster"))
+```

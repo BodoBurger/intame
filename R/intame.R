@@ -23,6 +23,23 @@
 #' @export
 #'
 #' @examples
+#' library(nnet)
+#' set.seed(4219)
+#' n = 500
+#' x = runif(n, min = 0, max = 1)
+#' x1 = runif(n, min=0, max=1) + .5*x
+#' x2 = runif(n, min=0, max=1) + .5*x
+#' y2 = function(x) -4 * cos(4*pi*x) * x + 4
+#' y = 4*x1 + y2(x2) + rnorm(n, 0, .5)
+#' df = data.frame(y, x1, x2)
+#' nnet.mod = nnet(y ~ ., df, size = 20, linout = TRUE,
+#'   decay = 0.0001, maxit = 1000, trace = FALSE)
+#' AME.x1 = intame(nnet.mod, df, "x1", intervals = 2)
+#' AME.x1
+#' plot(AME.x1)
+#' AME.x2 = intame(nnet.mod, df, "x2")
+#' AME.x2
+#' plot(AME.x2)
 intame = function(model, data, feature,
                   intervals = 5,
                   predict.fun = predict,
@@ -95,7 +112,7 @@ summary.intame = function(object, ...) {
 #' TODO: plot ALE instead of predictions
 #'
 #' @param x [\code{intame}]
-#' @param ...
+#' @param ... ignored
 #'
 #' @export
 plot.intame = function(x, ...) {

@@ -21,10 +21,13 @@ Imports:
     utils
 Suggests:
     ALEPlot,
-    testthat,
+    gridExtra,
     knitr,
     mlr,
-    rmarkdown
+    nnet,
+    patchwork,
+    rmarkdown,
+    testthat
 License: BSD_3_clause + file LICENSE
 URL: https://github.com/BodoBurger/intame
 BugReports: https://github.com/BodoBurger/intame/issues
