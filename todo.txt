@@ -1,0 +1,11 @@
+- Testing
+  - write tests for all .R files
+- computeALE
+  - add option for Apley's normalization
+  - multiclass normalization
+  - shift x.ale values to middle of intervals!!!
+- plot functions: add rugs
+
+- Create AME branch?
+
+(A) 2019-02-01 Compare: fitting linear model in each interval vs. calculating AME
