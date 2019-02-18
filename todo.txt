@@ -1,3 +1,4 @@
+- implement MLR models !!!!!!
 - Testing
   - write tests for all .R files
 - computeALE
@@ -11,3 +12,4 @@
 (A) 2019-02-01 Compare: fitting linear model in each interval vs. calculating AME
 
 - harmonize return values of ALE and PD
+

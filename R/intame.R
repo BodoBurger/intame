@@ -48,9 +48,11 @@ intame = function(model, data, feature,
   checkmate::assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
 
   if (method == "ALE") {
-    FE = computeALE(model, data, feature, ...)
+    FE = computeALE(model = model, data = data, feature = feature,
+      predict.fun = predict.fun, ...)
   } else if (method == "PDeriv") {
-    FE = computePD(model = model, data = data, feature = feature, derivative = FALSE, ...)
+    FE = computePD(model = model, data = data, feature = feature,
+      predict.fun = predict.fun, derivative = FALSE, ...)
   }
   fp_x = FE$fp_x
   fp_f = FE$fp_f

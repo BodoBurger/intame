@@ -21,6 +21,7 @@ library("intame")
 library("ggplot2")
 library("mlr")
 library("ame")
+library("patchwork")
 theme_set(theme_light())
 ```
 
@@ -223,3 +224,132 @@ No difference to PDeriv.
 <!-- knitr::kable(head(df)) -->
 <!-- print(cor(x1, x2)) -->
 <!-- ``` -->
+
+## More features
+
+```{r}
+set.seed(4218)
+normalize = function(x, lower.bound = 0, upper.bound = 1) {
+  x.min = min(x)
+  c1 = (upper.bound - lower.bound)/(max(x) - x.min)
+  c2 = lower.bound - c1 * x.min
+  return(c1 * x + c2)
+}
+n = 2000
+x = runif(n, min = 0, max = 1)
+x1 = x + rnorm(n, 0, 0.05)
+x2 = x + rnorm(n, 0, 0.05)
+x3 = normalize(0.9 * x + rnorm(n, 0, .1))
+x4 = .85 * x + rnorm(n, 0, .1)
+x5 = normalize(0.5 * x + rnorm(n, 0, .1))
+x6 = rnorm(n)
+x7 = runif(n, 0, 1)
+y1 = function(x) x
+y2 = function(x) 10*(x-.25)^2
+y3 = function(x) -2 * x
+y4 = function(x) 40 * ((x-.2)^3 - (x-.2)^2) + 4
+y5 = function(x) -4 * cos(4*pi*x) * x + 4
+y6 = function(x) .1 * x
+y7 = function(x) x^2
+x.grid = seq(0, 1, .01)
+par(mfrow = c(2,3), oma = c(0, 0, 2, 0))
+plot(x.grid, y2(x.grid), type = "l", xlab = "x2")
+plot(x.grid, y3(x.grid), type = "l", xlab = "x3")
+plot(x.grid, y4(x.grid), type = "l", xlab = "x4")
+plot(x.grid, y5(x.grid), type = "l", xlab = "x5")
+plot(x.grid, y6(x.grid), type = "l", xlab = "x6", ylim = c(0,1))
+plot(x.grid, y7(x.grid), type = "l", xlab = "x7")
+mtext("True partial effects", outer = TRUE, cex = 1.5)
+par(mfrow = c(1,1))
+y = y1(x1) + y2(x2) + y3(x3) + y4(x4) + y5(x5) + y6(x6) + y7(x7) + rnorm(n, 0, .05)
+dt = data.frame(y, x1, x2, x3, x4, x5, x6, x7)
+knitr::kable(cor(dt)[,-1])
+```
+
+### Fitting
+
+```{r}
+train.ind = c(rep(TRUE, 1000), rep(FALSE, 1000))
+tsk = makeRegrTask(data = dt, target = "y")
+lm.lrn = makeLearner("regr.lm")
+lm.mod = train(lm.lrn, tsk, subset = train.ind)
+summary(lm.mod$learner.model)
+nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001,
+  maxit = 1000, trace = FALSE)
+nnet.mod = train(nnet.lrn, tsk, subset = train.ind)
+svm.lrn = makeLearner("regr.svm")
+svm.mod = train(svm.lrn, tsk, subset = train.ind)
+ntrees = 10000
+gbm.lrn = makeLearner("regr.gbm", n.trees = ntrees, interaction.depth = 1, shrinkage = .02)
+gbm.mod = train(gbm.lrn, tsk, subset = train.ind)
+```
+
+### Performance
+
+```{r}
+lm.pred = predict(lm.mod, tsk, subset = !train.ind)
+nnet.pred = predict(nnet.mod, tsk, subset = !train.ind)
+svm.pred = predict(svm.mod, tsk, subset = !train.ind)
+gbm.pred = predict(gbm.mod, tsk, subset = !train.ind)
+performance(lm.pred, list(mse, rsq))
+performance(nnet.pred, list(mse, rsq))
+performance(svm.pred, list(mse, rsq))
+performance(gbm.pred, list(mse, rsq))
+```
+
+### intame
+
+#### Feature x2
+
+```{r}
+plot(computeALE(lm.mod$learner.model, data = dt, "x2"))
+plot(computeALE(nnet.mod$learner.model, data = dt, "x2"))
+plot(computeALE(svm.mod$learner.model, data = dt, "x2"))
+plot(computeALE(gbm.mod$learner.model, data = dt, "x2",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+```
+
+```{r}
+plot(computePD(lm.mod$learner.model, data = dt, "x2"))
+plot(computePD(nnet.mod$learner.model, data = dt, "x2"))
+plot(computePD(svm.mod$learner.model, data = dt, "x2"))
+plot(computePD(gbm.mod$learner.model, data = dt, "x2",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+```
+
+
+```{r}
+intame(lm.mod$learner.model, data = dt, "x2")
+intame(nnet.mod$learner.model, data = dt, "x2")
+intame(svm.mod$learner.model, data = dt[train.ind,], "x2")
+intame(gbm.mod$learner.model, data = dt[train.ind,], "x2",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+```
+
+#### Feature x5
+
+```{r}
+plot(computeALE(lm.mod$learner.model, data = dt, "x5"))
+plot(computeALE(nnet.mod$learner.model, data = dt, "x5"))
+plot(computeALE(svm.mod$learner.model, data = dt, "x5"))
+plot(computeALE(gbm.mod$learner.model, data = dt, "x5",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+```
+
+```{r}
+plot(computePD(lm.mod$learner.model, data = dt, "x5"))
+plot(computePD(nnet.mod$learner.model, data = dt, "x5"))
+plot(computePD(svm.mod$learner.model, data = dt, "x5"))
+plot(computePD(gbm.mod$learner.model, data = dt, "x5",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+```
+
+
+```{r}
+intame(lm.mod$learner.model, data = dt, "x5")
+intame(nnet.mod$learner.model, data = dt, "x5")
+intame(svm.mod$learner.model, data = dt[train.ind,], "x5")
+AME.x5.gbm = intame(gbm.mod$learner.model, data = dt[train.ind,], "x5",
+  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+plot(AME.x5.gbm)
+```
