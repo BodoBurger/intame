@@ -110,11 +110,12 @@ computeALE = function(model, data, feature,
     f = c(0, cumsum(delta))
     f = f - sum((f[1:grid.size] + f[2:(grid.size + 1)])/2 * w) / sum(w)
     ale = delta/diff(z)
-    ale.plot.data = data.frame(x = z, f)
+    ale.plot.data = data.frame(fp_x = z, fp_f = f)
   }
-  ale.x = z[-length(z)]
-  return(structure(list(x = z, f = f, grid.size = grid.size, i = interval.indices,
-                        ale = ale, ale.x = ale.x,
+  ale.x = (z[-length(z)] + z[-1]) / 2
+  return(structure(list(fp_x = z, fp_f = f, # predicted values
+                        fe_x = ale.x, fe_f = ale, # predicted derivatives
+                        grid.size = grid.size, i = interval.indices,
                         ale.plot.data = ale.plot.data,
                         multiclass = multiclass, feature = feature),
                    class = c("ALE", "intame"),
@@ -123,8 +124,8 @@ computeALE = function(model, data, feature,
 
 #' @export
 print.ALE = function(x, ...) {
-  ale.values = x$ale
-  names(ale.values) = round(x$ale.x, digits = 5)
+  ale.values = x$fe_f
+  names(ale.values) = round(x$fe_x, digits = 5)
   print(ale.values)
 }
 
@@ -147,11 +148,11 @@ plot.ALE = function(x, title = "ALE Plot", derivative = FALSE, ...) {
       xlab(ALE$feature) + ggtitle(title)
   } else {
     if (derivative) {
-      ggplot(data.frame(x = ALE$ale.x, ALE = ALE$ale), aes(x = x, y = ALE)) +
+      ggplot(data.frame(x = ALE$fe_x, ALE = ALE$fe_f), aes(x = x, y = ALE)) +
         geom_line() + geom_point() +
         xlab(ALE$feature) + ggtitle("ALE Plot (derivative)")
     } else {
-      ggplot(data = ALE$ale.plot.data, aes(x = x, y = f)) +
+      ggplot(data = ALE$ale.plot.data, aes(x = fp_x, y = fp_f)) +
         geom_line() + geom_point() +
         xlab(ALE$feature) + ggtitle(title)
     }

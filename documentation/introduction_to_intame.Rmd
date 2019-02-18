@@ -24,24 +24,11 @@ library("ame")
 theme_set(theme_light())
 ```
 
+## Motivation
+
+
+
 ## Data generating process
-
-<!-- ### Perfectly Separable, High Correlation -->
-
-<!-- Regression example with two highly correlated features. -->
-
-<!-- ```{r dgp-hi-cor} -->
-<!-- set.seed(4321) -->
-<!-- n = 500 -->
-<!-- x = runif(n, min = 0, max = 1) -->
-<!-- x1 = x + rnorm(n, 0, 0.05) -->
-<!-- x2 = x + rnorm(n, 0, 0.05) -->
-<!-- y2 = function(x) -4 * cos(4*pi*x) * x + 4 -->
-<!-- y = x1 + y2(x2) + rnorm(n, 0, .5) -->
-<!-- df = data.frame(y, x1, x2) -->
-<!-- knitr::kable(head(df)) -->
-<!-- print(cor(x1, x2)) -->
-<!-- ``` -->
 
 ### Perfectly Separable, Moderate Correlation
 
@@ -69,12 +56,7 @@ tsk = makeRegrTask(data = df, target = "y")
 nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001,
                        maxit = 1000, trace = FALSE)
 nnet.mod = train(nnet.lrn, tsk)
-plotPrediction(nnet.mod, tsk, "x1")$plot
-plotPrediction(nnet.mod, tsk, "x2")$plot
 ```
-
-The plot show the univariate response of the prediction function.
-The blue line is created using loess regression.
 
 ## AME
 
@@ -100,12 +82,10 @@ For feature 2, AME is less meaningful because of the non-monotonic effect.
 ```{r feature-1}
 ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", grid.size = 30)
 plot(ALE.x1, derivative = FALSE)
-mean(ALE.x1$ale)
+mean(ALE.x1$fe_f)
 PD.x1 = computePD(nnet.mod$learner.model, df, "x1", grid.size = 30, grid.method = "quantile")
 plot(PD.x1)
-PDeriv.x1 = computePD(nnet.mod$learner.model, df, "x1", grid.size = 30,
-  grid.method = "quantile", derivative = TRUE)
-mean(PDeriv.x1$y.hat)
+mean(PD.x1$fe_f)
 ```
 
 Average of ALE nearly 4, while average of PDeriv slighty more off.
@@ -118,35 +98,50 @@ ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", grid.size = 30)
 plot(ALE.x2)
 PD.x2 = computePD(nnet.mod$learner.model, df, "x2", grid.size = 30, grid.method = "quantile")
 plot(PD.x2)
-PDeriv.x2 = computePD(nnet.mod$learner.model, df, "x2", grid.size = 30,
-  grid.method = "quantile", derivative = TRUE)
 # analytical derivation of the additive part of feature 2:
 y2_partial = function(x) 4 * sin(4*pi*x) * 4*pi * x - 4 * cos(4*pi*x)
 mean(y2_partial(x2))
-mean(ALE.x2$ale)
-mean(PDeriv.x2$y.hat)
+mean(ALE.x2$fe_f)
+mean(PD.x2$fe_f)
+computeAME(nnet.mod, df, "x2")$x2
 ```
 
-AME and average ALE correspond to "true" effect (= average partial derivative).
-Again, PDeriv is "worse". *Is this analysis correct?*
+"True" effect is assumed to be the average of the partial derivative.
+Only valid for independent features?!?
+
+PDeriv is slightly "better" than ALE.
+AME is similar to "true" effect.
 
 ## Find intervals of similar MEs
 
 ### Feature 2
 
-```{r}
-breaks = partition(ALE.x2$ale.x, ALE.x2$ale, 5)
-plot(ALE.x2, derivative = FALSE) + geom_vline(xintercept = breaks)
-plot(ALE.x2) + geom_vline(xintercept = partition(ALE.x2$ale.x, ALE.x2$ale, 5,
-                                                 part.method = "cluster"))
+```{r, fig.cap="Green: breaks based on PD. Blue: ALE."}
+breaks.ALE = partition(ALE.x2$fe_x, ALE.x2$fe_f, 5)
+breaks.PD = partition(PD.x2$fe_x, PD.x2$fe_f, 5)
+plot(ALE.x2) +
+  geom_vline(xintercept = breaks.PD, col = "green") +
+  geom_vline(xintercept = breaks.ALE, col = "blue")
+
 ```
 
-rpart returns reasonable intervals. Clustering does not work here.
+rpart returns reasonable intervals.
+
+```{r fig.cap="Green: breaks based on PD. Blue: ALE."}
+breaks.ALE.cluster = partition(ALE.x2$fe_x, ALE.x2$fe_f, 5, part.method = "cluster")
+breaks.PD.cluster = partition(PD.x2$fe_x, PD.x2$fe_f, 5,  part.method = "cluster")
+plot(ALE.x2) +
+  geom_vline(xintercept = breaks.PD.cluster, col = "green") +
+  geom_vline(xintercept = breaks.ALE.cluster, col = "blue")
+```
+
+ Clustering does not work here.
 
 #### Compute AME given the intervals
 
 ```{r}
-AME.x2 = intame(nnet.mod$learner.model, df, "x2", breaks = breaks)
+AME.x2 = intame(nnet.mod$learner.model, df, "x2", breaks = breaks.ALE,
+  method = "PDeriv")
 AME.x2
 plot(AME.x2)
 ```
@@ -155,7 +150,7 @@ We check the result by calculating the "true" effect in each interval
 using the analytically calculated partial derivative.
 
 ```{r}
-bounds = unique(c(min(x2), sort(breaks), max(x2) + 0.00001))
+bounds = unique(c(min(x2), sort(breaks.ALE), max(x2) + 0.00001))
 l = length(bounds) - 1
 true.effects = numeric(l)
 for (i in 1:l) {
@@ -176,7 +171,7 @@ AMEs for each interval again.
 
 ```{r}
 AME.x2.add.break.point = intame(nnet.mod$learner.model, df, "x2",
-                                            breaks = c(0.25, breaks))
+  breaks = c(0.25, breaks.PD), method = "PDeriv")
 AME.x2.add.break.point$AME
 plot(AME.x2.add.break.point)
 ```
@@ -186,36 +181,11 @@ plot(AME.x2.add.break.point)
 *intame* calculates breaks points by default:
 
 ```{r}
-AME.x2.auto = intame(nnet.mod$learner.model, df, "x2")
+AME.x2.auto = intame(nnet.mod$learner.model, df, "x2", method = "PDeriv")
 AME.x2.auto
 plot(AME.x2.auto)
 AME.x2.auto$bounds
 ```
-
-#### Use PDeriv
-
-```{r}
-AME.x2.PDeriv = intame(nnet.mod$learner.model, df, "x2",
-                                method = "PDeriv")
-AME.x2.PDeriv
-plot(AME.x2.PDeriv) + ggtitle("Partial Derivative")
-```
-
-Less sensible break points? Check true effect for each interval:
-
-```{r}
-bounds = AME.x2.PDeriv$bounds
-l = length(bounds) - 1
-true.effects = numeric(l)
-for (i in 1:l) {
-  selection = x2 >= bounds[i] & x2 < bounds[i+1]
-  df.interval = df[selection,]
-  true.effects[i] = mean(y2_partial(x2[selection]))
-}
-true.effects
-```
-
-Matches.
 
 #### Local PDeriv
 
@@ -236,3 +206,20 @@ plot(AME.x2.WDeriv) + ggtitle("Weighted Partial Derivative, w = 4")
 ```
 
 No difference to PDeriv.
+
+<!-- ### Perfectly Separable, High Correlation -->
+
+<!-- Regression example with two highly correlated features. -->
+
+<!-- ```{r dgp-hi-cor} -->
+<!-- set.seed(4321) -->
+<!-- n = 500 -->
+<!-- x = runif(n, min = 0, max = 1) -->
+<!-- x1 = x + rnorm(n, 0, 0.05) -->
+<!-- x2 = x + rnorm(n, 0, 0.05) -->
+<!-- y2 = function(x) -4 * cos(4*pi*x) * x + 4 -->
+<!-- y = x1 + y2(x2) + rnorm(n, 0, .5) -->
+<!-- df = data.frame(y, x1, x2) -->
+<!-- knitr::kable(head(df)) -->
+<!-- print(cor(x1, x2)) -->
+<!-- ``` -->

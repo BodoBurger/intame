@@ -46,15 +46,17 @@ intame = function(model, data, feature,
                   method = "ALE", breaks = NULL, ...) {
   checkmate::assert_choice(feature, colnames(data))
   checkmate::assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
-  if (is.null(breaks)) {
-    if (method == "ALE") {
-      ALE = computeALE(model, data, feature, ...)
-      breaks = partition(ALE$ale.x, ALE$ale, intervals)
-    } else if (method == "PDeriv") {
-      PD = computePD(model = model, data = data, feature = feature, derivative = TRUE, ...)
-      breaks = partition(PD$x.grid, PD$y.hat, intervals)
-    }
+
+  if (method == "ALE") {
+    FE = computeALE(model, data, feature, ...)
+  } else if (method == "PDeriv") {
+    FE = computePD(model = model, data = data, feature = feature, derivative = FALSE, ...)
   }
+  fp_x = FE$fp_x
+  fp_f = FE$fp_f
+  fe_x = FE$fe_x
+  fe_f = FE$fe_f
+  if (is.null(breaks)) breaks = partition(fe_x, fe_f, intervals)
 
   x = data[, feature]
   y.hat = predict.fun(model, newdata = data)
@@ -86,7 +88,9 @@ intame = function(model, data, feature,
                         y.hat.mean = y.hat.mean,
                         x.interval.average = x.interval.average,
                         y.hat = y.hat,
-                        x = x),
+                        x = x,
+                        fp_x = fp_x, fp_f = fp_f,
+                        fe_x = fe_x, fe_f = fe_f),
                    class = "intame",
                    comment = "Main class of intame package."))
 }
@@ -121,7 +125,7 @@ plot.intame = function(x, ...) {
   y.0 = x$y.hat.mean
   bounds = x$bounds
   p = ggplot() +
-    geom_point(mapping = aes(x$x, x$y.hat), pch = 16, alpha = .2)
+    geom_point(mapping = aes(x$fp_x, x$fp_f), pch = 16, alpha = .3)
   for(i in 1:(length(bounds)-1)) {
     p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] -
       (x.0[i] - bounds[i]) * AME[i], y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])),

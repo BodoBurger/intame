@@ -120,6 +120,7 @@ computePD = function(model, data, feature,
       tmp.data[, feature] = x.grid[i]
     }
     if (derivative) {
+      stop("Has to be fixed.")
       if (multiclass) {
         for (class in classes) {
           y.hat[i, class] = weighted.mean(derivative(tmp.data[, feature],
@@ -142,7 +143,10 @@ computePD = function(model, data, feature,
   } else {
     plot.data = data.frame(x = x.grid, y.hat)
   }
-  return(structure(list(y.hat = y.hat, x.grid = x.grid,
+  fe_x = (x.grid[-length(x.grid)] + x.grid[-1])/2
+  fe_f = diff(y.hat)/diff(x.grid)
+  return(structure(list(fp_x = x.grid, fp_f = y.hat,
+                        fe_x = fe_x, fe_f = fe_f,
                         plot.data = plot.data,
                         grid.size = grid.size, l = l,
                         multiclass = multiclass, feature = feature),
