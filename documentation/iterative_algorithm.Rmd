@@ -45,17 +45,15 @@ x1 = runif(n, min=0, max=1) + .5*x
 x2 = runif(n, min=0, max=1) + .5*x
 x_o_cor = runif(n, min=0, max=1) + .5*x
 x_o_indep = runif(n, min=0, max=1) + .5*runif(n, 0, 1)
+y1 = function(x) 4*x
 y2 = function(x) -4 * cos(4*pi*x) * x + 4
-y = 4*x1 + y2(x2) + rnorm(n, 0, .5) + 20*x_o_cor^2 + 20*x_o_indep^2
+y = y1(x1) + y2(x2) + rnorm(n, 0, .5) + 20*x_o_cor^2 + 20*x_o_indep^2
 df = data.frame(y, x1, x2)
 df.full = data.frame(y, x1, x2, x_o_cor, x_o_indep)
 knitr::kable(head(df))
 knitr::kable(cor(df.full)[,-1])
-gridExtra::grid.arrange(
-  qplot(x1, 4*x1, geom = "line") + ggtitle("\"True effect\" for x1"),
-  qplot(x2, y2(x2), geom = "line") + ggtitle("\"True effect\" for x2"),
-  ncol=2)
-
+qplot(x1, y1(x1), geom = "line") + ggtitle("\"True effect\" for x1") +
+qplot(x2, y2(x2), geom = "line") + ggtitle("\"True effect\" for x2")
 ```
 
 ```{r fit-neural-network}
@@ -71,43 +69,38 @@ nnet.mod = train(nnet.lrn, tsk)
 plotPrediction(nnet.mod, tsk, "x2")
 ```
 
+## ALE predictions to fit
+
 ```{r ALE}
-nnet.ale = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
-plot(nnet.ale)
-px1 = nnet.ale$fp_x
-pf1 = nnet.ale$fp_f
+nnet.ale1 = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
+plot(nnet.ale1)
+px1 = nnet.ale1$fp_x
+pf1 = nnet.ale1$fp_f
 
-nnet.ale = computeALE(nnet.mod$learner.model, df.full, "x2", grid.size = 40)
-plot(nnet.ale)
-px2 = nnet.ale$fp_x
-pf2 = nnet.ale$fp_f
+nnet.ale2 = computeALE(nnet.mod$learner.model, df.full, "x2", grid.size = 100)
+plot(nnet.ale2)
+px2 = nnet.ale2$fp_x
+pf2 = nnet.ale2$fp_f
+```
 
-x = px2
-f = pf2
-plot(x, f)
+## Version 0.1
 
-plotR2s = function(R2s) {
-  plot(1:length(R2s), R2s)
-}
-
+```{r algo-0-1}
 r_squared_from_lm = function(mod) {
   summary(mod)$r.squared
 }
 
-# generalize it
-split_and_fit = function(x, f, threshold = .99) {
+split_and_fit = function(x, f, threshold = .99, max_splits = 5) {
   l = length(x)
   splits = integer(0)
   metrics = numeric(0)
-  mod.0 = summary(lm(f ~ x))
-  opt.metric = mod.0$r.squared
+  mod.0 = lm(f ~ x, x = TRUE)
+  opt.metric = summary(mod.0)$r.squared
   opt.models = mod.0
-  if (opt.metric >= threshold) return(list(models = mod.0,
+  if (opt.metric >= threshold) return(list(models = list(mod.0),
                                            splits = NA,
                                            metrics = opt.metric))
   else {
-  print("Need splits")
-  
   while(TRUE) {
     k = length(splits) + 2
     splits.remaining = (2:(l-1))[!(2:(l-1) %in% splits)] # all remaining split.points
@@ -118,13 +111,17 @@ split_and_fit = function(x, f, threshold = .99) {
       x_tmp = vector("list", k)
       f_tmp = vector("list", k)
       mod_tmp = vector("list", k)
+      weights = numeric(k)
       bounds = sort(c(1, l, splits, split))
       for (i in seq_len(k)) {
         x_tmp[[i]] = x[bounds[i]:bounds[i+1]]
         f_tmp[[i]] = f[bounds[i]:bounds[i+1]]
-        mod_tmp[[i]] = lm(f_tmp[[i]] ~ x_tmp[[i]])
+        mod_tmp[[i]] = lm(f_tmp[[i]] ~ x_tmp[[i]], x = TRUE)
+        weights[i] = length(x_tmp[[i]])
       }
-      R2_sum = mean(vapply(mod_tmp, r_squared_from_lm, numeric(1)))
+      # weights !!!
+      R2_sum = weighted.mean(vapply(mod_tmp, r_squared_from_lm, numeric(1)),
+        weights)
       R2_sums[as.character(split)] = R2_sum
       if (R2_sum > opt.metric) {
         opt.metric = R2_sum
@@ -134,19 +131,70 @@ split_and_fit = function(x, f, threshold = .99) {
     }
     splits = c(splits, opt.split)
     metrics = c(metrics, opt.metric)
-    if (opt.metric > threshold) {
+    if (opt.metric > threshold || length(splits) == max_splits) {
       print("Enough splits.")
       return(list(models = opt.models,
                   splits = splits,
-                  metrics = metrics))
+                  metrics = metrics,
+                  threshold = threshold))
     }
   }}
 }
 
-saf = split_and_fit(x, f, .99)
-splits = saf$splits
-bounds = sort(c(1, splits, length(x)))
-plot(x, f, col = "blue")
-lines(x[bounds], f[bounds], type = "l")
+splits_plot_points = function(saf) {
+  x = numeric(0)
+  y = numeric(0)
+  id = numeric(0)
+  models = saf$models
+  if (length(models) == 1) {
+    x = models[[1]]$x[,2]
+    y = models[[1]]$fitted.values
+    id = rep(1, length(x))
+  } else {
+    for (i in seq_along(models)) {
+      x_i = models[[i]]$x[,2]
+      x = c(x, x_i)
+      y = c(y, models[[i]]$fitted.values)
+      id = c(id, rep(i, length(x_i)))
+    }
+  }
+  return(data.frame(x, y, id))
+}
+
+saf_x1 = split_and_fit(px1, pf1, .95)
+saf_x1$splits
+saf_x1$metrics
+gg.data = splits_plot_points(saf_x1)
+plot(nnet.ale1) + geom_line(data = gg.data, aes(x, y, group = id), col = "blue")
+
+saf_x2 = split_and_fit(px2, pf2, .90)
+saf_x2$splits
+saf_x2$metrics
+gg.data = splits_plot_points(saf_x2)
+plot(nnet.ale2) +
+  geom_line(data = gg.data, aes(x, y, group = id), col = "blue") +
+  geom_vline(xintercept = px2[saf_x2$splits], linetype = 3, size = .4)
+```
+
+### Remarks
+
+#### Preference for adjacent points
+
+Comparing weighted means of the segments' R2 is important
+because without it there was a strong preference for adjacent points 
+(as two adjacent points yield an R2 of 1).
+
+Further, due to starting at the left side left split points are preferred.
+Problem?
+
+#### Different slopes
+
+A trend has influence on the stopping point.
+
+```{r different-slopes}
+nnet.ale1_flat = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
+plot(nnet.ale1_flat)
+px1 = nnet.ale1$fp_x
+pf1 = nnet.ale1$fp_f
 ```
 
