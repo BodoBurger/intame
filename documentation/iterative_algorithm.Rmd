@@ -1,0 +1,152 @@
+---
+title: Untitled
+author: 
+  - name: Bodo Burger
+    #affiliation: LMU Munich
+    #address: >
+    #  First line
+    #  Second line
+    #email: \email{bb@example.com}
+    #url: http://example.com
+  #- name: Second Author
+    #affiliation: Affiliation
+date: 2018-00-00
+output:
+  html_document: 
+    toc: yes
+  github_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+urlcolor: blue
+#bibliography: "literature.bib"
+#link-citations: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
+                      cache = TRUE, cache.path = "cache/",
+                      fig.path = "figures/file-name-")
+library("intame")
+library("ggplot2")
+library("mlr")
+library("ame")
+library("patchwork")
+theme_set(theme_light())
+set.seed(4218)
+```
+
+
+```{r}
+set.seed(4219)
+n = 500
+x = runif(n, min = 0, max = 1)
+x1 = runif(n, min=0, max=1) + .5*x
+x2 = runif(n, min=0, max=1) + .5*x
+x_o_cor = runif(n, min=0, max=1) + .5*x
+x_o_indep = runif(n, min=0, max=1) + .5*runif(n, 0, 1)
+y2 = function(x) -4 * cos(4*pi*x) * x + 4
+y = 4*x1 + y2(x2) + rnorm(n, 0, .5) + 20*x_o_cor^2 + 20*x_o_indep^2
+df = data.frame(y, x1, x2)
+df.full = data.frame(y, x1, x2, x_o_cor, x_o_indep)
+knitr::kable(head(df))
+knitr::kable(cor(df.full)[,-1])
+gridExtra::grid.arrange(
+  qplot(x1, 4*x1, geom = "line") + ggtitle("\"True effect\" for x1"),
+  qplot(x2, y2(x2), geom = "line") + ggtitle("\"True effect\" for x2"),
+  ncol=2)
+
+```
+
+```{r fit-neural-network}
+lm.mod = lm(y ~ ., df)
+plotPrediction(lm.mod, df, "x2")
+lm.mod.full = lm(y ~ x1 + x2 + I(x_o_cor^2) + I(x_o_indep^2), df.full)
+lm.mod.full
+
+tsk = makeRegrTask(data = df.full, target = "y")
+nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001,
+                       maxit = 1000, trace = FALSE)
+nnet.mod = train(nnet.lrn, tsk)
+plotPrediction(nnet.mod, tsk, "x2")
+```
+
+```{r ALE}
+nnet.ale = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
+plot(nnet.ale)
+px1 = nnet.ale$fp_x
+pf1 = nnet.ale$fp_f
+
+nnet.ale = computeALE(nnet.mod$learner.model, df.full, "x2", grid.size = 40)
+plot(nnet.ale)
+px2 = nnet.ale$fp_x
+pf2 = nnet.ale$fp_f
+
+x = px2
+f = pf2
+plot(x, f)
+
+plotR2s = function(R2s) {
+  plot(1:length(R2s), R2s)
+}
+
+r_squared_from_lm = function(mod) {
+  summary(mod)$r.squared
+}
+
+# generalize it
+split_and_fit = function(x, f, threshold = .99) {
+  l = length(x)
+  splits = integer(0)
+  metrics = numeric(0)
+  mod.0 = summary(lm(f ~ x))
+  opt.metric = mod.0$r.squared
+  opt.models = mod.0
+  if (opt.metric >= threshold) return(list(models = mod.0,
+                                           splits = NA,
+                                           metrics = opt.metric))
+  else {
+  print("Need splits")
+  
+  while(TRUE) {
+    k = length(splits) + 2
+    splits.remaining = (2:(l-1))[!(2:(l-1) %in% splits)] # all remaining split.points
+    R2_sums = numeric(length(splits.remaining))
+    names(R2_sums) = splits.remaining
+    opt.split = splits.remaining[1]
+    for (split in splits.remaining) {
+      x_tmp = vector("list", k)
+      f_tmp = vector("list", k)
+      mod_tmp = vector("list", k)
+      bounds = sort(c(1, l, splits, split))
+      for (i in seq_len(k)) {
+        x_tmp[[i]] = x[bounds[i]:bounds[i+1]]
+        f_tmp[[i]] = f[bounds[i]:bounds[i+1]]
+        mod_tmp[[i]] = lm(f_tmp[[i]] ~ x_tmp[[i]])
+      }
+      R2_sum = mean(vapply(mod_tmp, r_squared_from_lm, numeric(1)))
+      R2_sums[as.character(split)] = R2_sum
+      if (R2_sum > opt.metric) {
+        opt.metric = R2_sum
+        opt.split = split
+        opt.models = mod_tmp
+      }
+    }
+    splits = c(splits, opt.split)
+    metrics = c(metrics, opt.metric)
+    if (opt.metric > threshold) {
+      print("Enough splits.")
+      return(list(models = opt.models,
+                  splits = splits,
+                  metrics = metrics))
+    }
+  }}
+}
+
+saf = split_and_fit(x, f, .99)
+splits = saf$splits
+bounds = sort(c(1, splits, length(x)))
+plot(x, f, col = "blue")
+lines(x[bounds], f[bounds], type = "l")
+```
+
