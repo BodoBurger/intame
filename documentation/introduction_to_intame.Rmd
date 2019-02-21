@@ -261,7 +261,7 @@ plot(x.grid, y6(x.grid), type = "l", xlab = "x6", ylim = c(0,1))
 plot(x.grid, y7(x.grid), type = "l", xlab = "x7")
 mtext("True partial effects", outer = TRUE, cex = 1.5)
 par(mfrow = c(1,1))
-y = y1(x1) + y2(x2) + y3(x3) + y4(x4) + y5(x5) + y6(x6) + y7(x7) + rnorm(n, 0, .05)
+y = y1(x1) + y2(x2) + y3(x3) + y4(x4) + y5(x5) + y6(x6) + y7(x7) + rnorm(n, 0, 1)
 dt = data.frame(y, x1, x2, x3, x4, x5, x6, x7)
 knitr::kable(cor(dt)[,-1])
 ```

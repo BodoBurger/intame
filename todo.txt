@@ -4,12 +4,30 @@
 - computeALE
   - add option for Apley's normalization
   - multiclass normalization
-  - shift x.ale values to middle of intervals!!!
 - plot functions: add rugs
-
-- Create AME branch?
-
-(A) 2019-02-01 Compare: fitting linear model in each interval vs. calculating AME
 
 - harmonize return values of ALE and PD
 
+- wahre Effekte in ALE plot
+
+- iterative partition
+  - randomize split selection from splits_remaining
+
+## Meeting 2019-02-18
+  - ALE und PD in einem Plot
+    - korrelierte Features
+       - verschieden Stärken
+    - Interaktionen, die nicht im Model sind
+
+- package für Simulationen
+
+- epsilon
+
+- gewichtung bei quantilen klären (ALEPlot)
+
+- randomForest / boosting
+
+- test vs training daten für PD / ALE?
+
+- AME ersetzen durch ALE / PDeriv mit wenigen Splitpunkte neuberechnen
+    - oder Mittelwert berechnen? Vergleich
