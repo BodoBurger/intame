@@ -62,17 +62,40 @@ split_and_fit = function(x, f, method = "WMSRS", threshold = .95, max_splits = 1
   structure(list(models = opt_models,
                  splits = splits,
                  metrics = metrics,
+                 x_org = x, f_org = f,
                  method = method,
                  threshold = threshold,
                  max_splits = max_splits),
     class = "IntamePartition")
 }
 
-splits_plot_points = function(saf) {
+#' @export
+plot.IntamePartition = function(x, title = "IntamePartition",
+                                plot_org_points = TRUE,
+                                return_data = FALSE,
+                                ...) {
+  gg_data = splits_plot_points(x)
+  if (return_data) {
+    return(gg_data)
+  }
+  p = ggplot() +
+    geom_line(data = gg_data, aes(x = x, y = y, group = id), color = "blue")
+  if (length(x$splits) > 0) {
+    p = p + geom_vline(xintercept = x$x_org[x$splits], linetype = 3, size = .4)
+  }
+  if (plot_org_points) {
+    org_data = data.frame(x = x$x_org, y = x$f_org)
+    p = p + geom_line(data = org_data, aes(x = x, y = y)) +
+      geom_point(data = org_data, aes(x = x, y = y))
+  }
+  p + ggtitle(title)
+}
+
+splits_plot_points = function(partition) {
   x = numeric(0)
   y = numeric(0)
   id = numeric(0)
-  models = saf$models
+  models = partition$models
   if (length(models) == 1) {
     x = models[[1]]$x[,2]
     y = models[[1]]$fitted.values
@@ -87,5 +110,3 @@ splits_plot_points = function(saf) {
   }
   return(data.frame(x, y, id))
 }
-
-# plot function

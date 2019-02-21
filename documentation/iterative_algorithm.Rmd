@@ -87,15 +87,12 @@ pf2 = nnet.ale2$fp_f
 
 ```{r}
 saf_x1 = split_and_fit(px1, pf1, threshold = .95)
+plot(saf_x1)
 saf_x1$splits
 saf_x1$metrics
-plot(nnet.ale1) +
-  geom_line(data = splits_plot_points(saf_x1), aes(x, y, group = id), col = "blue")
 
 saf_x2 = split_and_fit(px2, pf2, method = "WMSRS", threshold = .95, max_splits = 5)
-plot(nnet.ale2) +
-  geom_line(data = splits_plot_points(saf_x2), aes(x, y, group = id), col = "blue") +
-  geom_vline(xintercept = px2[saf_x2$splits], linetype = 3, size = .4)
+plot(saf_x2)
 px2[saf_x2$splits]
 saf_x2$metrics
 ```
