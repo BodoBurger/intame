@@ -19,7 +19,15 @@
 #'   Define interval limits manually. Overwrites \code{intervals} if provided.
 #' @param ... Arguments passed on to other functions: computeALE, computePD
 #'
-#' @return [\code{intame}]
+#' @return
+#'   Object of \code{\link[base]{class}} "intame" which is a list containning
+#'   the following components:
+#'   \describe{
+#'     \item{AME}{named vector}
+#'     \item{fp_x}{text-2}
+#'     \item{fp_f}{text-2}
+#'   }
+#'
 #' @export
 #'
 #' @examples
@@ -93,18 +101,18 @@ intame = function(model, data, feature,
                         x = x,
                         fp_x = fp_x, fp_f = fp_f,
                         fe_x = fe_x, fe_f = fe_f),
-                   class = "intame",
+                   class = "Intame",
                    comment = "Main class of intame package."))
 }
 
 #' @export
-print.intame = function(x, ...) {
+print.Intame = function(x, ...) {
   print(x$AME)
 }
 
 # TODO: check char length of interval
 #' @export
-summary.intame = function(object, ...) {
+summary.Intame = function(object, ...) {
   cat("# Interval-based Marginal Effects for", object$feature, "#\n\n")
   cat(format("Interval", width = 14, justify = "right"), " | Average Marginal Effect\n", sep = "")
   for (i in seq_along(object$AME)) {
@@ -121,7 +129,7 @@ summary.intame = function(object, ...) {
 #' @param ... ignored
 #'
 #' @export
-plot.intame = function(x, ...) {
+plot.Intame = function(x, ...) {
   AME = x$AME
   x.0 = x$x.interval.average
   y.0 = x$y.hat.mean
