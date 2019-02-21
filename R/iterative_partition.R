@@ -6,14 +6,14 @@
 #' @param x [\code{numeric}]
 #' @param f [\code{numeric}]
 #' @param method [\code{character(1)}]
-#'   Implemented methods: "WMSRS" (weighted mean squared R squared),
-#'                        "WMRS" (weighted mean R squared).
+#'   Implemented methods: "WMSR2" (weighted mean squared R squared),
+#'                        "WMR2" (weighted mean R squared).
 #' @param threshold [\code{numeric}] Stopping criterium.
 #' @param max_splits [\code{integer}] Stopping criterium.
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-split_and_fit = function(x, f, method = "WMSRS", threshold = .95, max_splits = 10) {
+split_and_fit = function(x, f, method = "WMSR2", threshold = .95, max_splits = 10) {
   threshold = new_metric(method, threshold)
   l = length(x)
   splits = integer(0)

@@ -1,16 +1,16 @@
 #' constructor for S3 class "IntameMetric"
 #'
 #' @param name [\code{character(1)}] Name of (sub-)class.
-#'   Currently implemented: WMSRS, WMRS.
+#'   Currently implemented: WMSR2, WMR2.
 #' @param x [\code{numeric}] Metric value(s).
 #'
 #' @return object of class "IntameMetric"
 #' @export
 #'
 #' @examples
-#' new_metric("WMSRS", .5)
+#' new_metric("WMSR2", .5)
 new_metric = function(name, x = numeric()) {
-  if (name == "WMSRS" || name == "WMRS") name = c(name, "RS")
+  if (name == "WMSR2" || name == "WMR2") name = c(name, "R2")
   structure(x, class = c(name, "IntameMetric", "numeric"))
 }
 
@@ -32,7 +32,7 @@ print.IntameMetric = function(x, ...) {
 #'
 #' @examples
 #' model = lm(mpg ~ disp, mtcars)
-#' extract_metric_part_from_lm(new_metric("WMSRS"), model)
+#' extract_metric_part_from_lm(new_metric("WMSR2"), model)
 extract_metric_part_from_lm = function(metric, model) {
   UseMethod("extract_metric_part_from_lm")
 }
@@ -60,30 +60,50 @@ aggregate_metric_parts = function(metric, models, weights) {
   UseMethod("aggregate_metric_parts")
 }
 
-#############################################
-# RS (R squared), subclasses WMSRS and WMRS #
+##############################################-#
+# R2 (R squared), subclasses WMSR2 and WMR2 ####
 
 #' @export
-extract_metric_part_from_lm.RS = function(metric, model) {
+extract_metric_part_from_lm.R2 = function(metric, model) {
   summary(model)$r.squared
 }
 
 #' @export
-compare_metric_values.RS = function(metric, other_metric) {
+compare_metric_values.R2 = function(metric, other_metric) {
   metric > other_metric
 }
 
-# WMSRS (weighted mean of squared R squared)
+# WMSR2 (weighted mean of squared R squared)
 #' @export
-aggregate_metric_parts.WMSRS = function(metric, models, weights) {
+aggregate_metric_parts.WMSR2 = function(metric, models, weights) {
   structure(weighted.mean(vapply(models, function(model, metric)
     extract_metric_part_from_lm(metric, model), numeric(1), metric = metric)^2,
     weights), class = class(metric))
 }
 
-# WMRS (weighted mean of R squared)
+# WMR2 (weighted mean of R squared)
 #' @export
-aggregate_metric_parts.WMRS = function(metric, models, weights) {
+aggregate_metric_parts.WMR2 = function(metric, models, weights) {
+  structure(weighted.mean(vapply(models, function(model, metric)
+    extract_metric_part_from_lm(metric, model), numeric(1), metric = metric),
+    weights), class = class(metric))
+}
+
+#####################################################-#
+# WMRSS (weighted mean of residual sum of squares) ####
+
+#' @export
+extract_metric_part_from_lm.WMRSS = function(metric, model) {
+  mean(model$residuals^2)
+}
+
+#' @export
+compare_metric_values.WMRSS = function(metric, other_metric) {
+  metric < other_metric # smaller is better
+}
+
+#' @export
+aggregate_metric_parts.WMRSS = function(metric, models, weights) {
   structure(weighted.mean(vapply(models, function(model, metric)
     extract_metric_part_from_lm(metric, model), numeric(1), metric = metric),
     weights), class = class(metric))

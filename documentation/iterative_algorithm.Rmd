@@ -91,10 +91,13 @@ plot(saf_x1)
 saf_x1$splits
 saf_x1$metrics
 
-saf_x2 = split_and_fit(px2, pf2, method = "WMSRS", threshold = .95, max_splits = 5)
+saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .95, max_splits = 5)
 plot(saf_x2)
 px2[saf_x2$splits]
 saf_x2$metrics
+
+saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .95, max_splits = 5)
+plot(saf_x2.RSS)
 ```
 
 ## Ideas
