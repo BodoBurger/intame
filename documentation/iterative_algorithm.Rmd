@@ -1,5 +1,5 @@
 ---
-title: Untitled
+title: Iterative partitioning
 author: 
   - name: Bodo Burger
     #affiliation: LMU Munich
@@ -25,8 +25,7 @@ urlcolor: blue
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
-                      cache = TRUE, cache.path = "cache/",
-                      fig.path = "figures/file-name-")
+                      cache = FALSE, cache.path = "cache/iter-algo")
 library("intame")
 library("ggplot2")
 library("mlr")
@@ -56,20 +55,19 @@ qplot(df$x2, y2(df$x2), geom = "line") + ggtitle("\"True effect\" for x2")
 ```
 
 ```{r fit-neural-network}
-lm.mod.omitted = lm(y ~ x1 + x2, df)
-lm.mod.omitted
+# lm.mod.omitted = lm(y ~ x1 + x2, df)
+# lm.mod.omitted
 lm.mod = lm(y ~ x1 + x2 + I(x_o_cor^2) + I(x_o_indep^2), df)
-lm.mod
-
+# lm.mod
 df_test = dgp(1000, y1, y2)
-mean((df_test$y - predict(lm.mod, df_test))^2) # test set MSE
+mean((df_test$y - predict(lm.mod, df_test))^2) # test set MSE linear model
 
 tsk = makeRegrTask(data = df, target = "y")
 nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001,
                        maxit = 1000, trace = FALSE)
 nnet.mod = train(nnet.lrn, tsk)
-plotPrediction(nnet.mod, tsk, "x2")
 performance(predict(nnet.mod, newdata = df_test), list(mse)) # test set MSE
+plotPrediction(nnet.mod, tsk, "x2")$plot
 ```
 
 ## ALE predictions to fit
