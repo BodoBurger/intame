@@ -32,11 +32,11 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
     extract_metric_part_from_lm(new_metric(method), mod_0))
   metrics = opt_metric
   opt_models = list(mod_0)
-  if (compare_metric_values(opt_metric, threshold)) {
-  } else {
+  n_splits = 0
+  if (!compare_metric_values(opt_metric, threshold)) {
     cat(".")
     while(TRUE) {
-      n_segments = length(splits) + 2
+      n_segments = n_splits + 2
       splits_remaining = (2:(l-1))[!(2:(l-1) %in% splits)] # all remaining split.points
       metrics_new_split = new_metric(method, numeric(length(splits_remaining)))
       names(metrics_new_split) = splits_remaining
@@ -62,12 +62,13 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
         }
       }
       splits = c(splits, opt_split)
+      n_splits = length(splits)
       metrics = c(metrics, opt_metric)
       if (compare_metric_values(opt_metric, threshold) ||
-          length(splits) == max_splits) {
+          n_splits == max_splits) {
         cat(" Done.\n")
         cat(format(paste0("Metric (", method, "):"), width = 18, justify = "right"), opt_metric, "\n")
-        cat(" Number of splits:", length(splits), "\n")
+        cat(" Number of splits:", n_splits, "\n")
         break
       }
       cat("|.")
@@ -75,6 +76,7 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
   }
   structure(list(models = opt_models,
                  splits = splits,
+                 n_splits = n_splits,
                  metrics = metrics,
                  x_org = x, f_org = f,
                  method = method,
@@ -85,15 +87,14 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
 
 #' @export
 print.IntamePartition = function(x, ...) {
-  l = length(x$splits)
   cat("### Intame Partition ###\n")
-  if (l == 0) {
+  if (x$n_splits == 0) {
     width = 6
     cat("     #  ", format(0, width = width), "\n")
     cat(" Split: ", format(NA, width = width), "\n")
   } else {
     width = max(6, max(sapply(x$splits, nchar))+1)
-    cat("     #  ", format(0:length(x$splits), width = width), "\n")
+    cat("     #  ", format(0:x$n_splits, width = width), "\n")
     cat(" Split: ", format(c(NA, x$x_org[x$splits]), width = width, digits = 3), "\n")
   }
   cat("Metric: ", format(x$metrics, width = width, digits = 3), "\n")
@@ -104,6 +105,7 @@ print.IntamePartition = function(x, ...) {
 #' @param x object of class "IntamePartition
 #' @param title [\code{character(1)}] Plot title.
 #' @param plot_org_points Show points that were devided into partitions.
+#' @param show_split_numbers Show label for each split.
 #' @param return_data Return data.frame to create individual plots
 #' @param ... ignored
 #'
@@ -112,11 +114,13 @@ print.IntamePartition = function(x, ...) {
 #' @export
 plot.IntamePartition = function(x, title = "IntamePartition",
                                 plot_org_points = TRUE,
+                                show_split_numbers = TRUE,
                                 return_data = FALSE,
                                 ...) {
   checkmate::assert_class(x, classes = "IntamePartition")
   checkmate::assert_character(title, len = 1)
   checkmate::assert_logical(plot_org_points, len = 1)
+  checkmate::assert_logical(show_split_numbers, len = 1)
   checkmate::assert_logical(return_data, len = 1)
   gg_data = splits_plot_points(x)
   if (return_data) {
@@ -124,14 +128,18 @@ plot.IntamePartition = function(x, title = "IntamePartition",
   }
   p = ggplot() +
     geom_line(data = gg_data, aes(x = x, y = y, group = id), color = "blue")
-  if (length(x$splits) > 0) {
+  if (x$n_splits > 0) {
     p = p + geom_vline(xintercept = x$x_org[x$splits], linetype = 3, size = .6,
       col = "darkgray", alpha = 1)
+    if (show_split_numbers) {
+      p = p + geom_label(mapping=aes(x=x$x_org[x$splits], y=max(gg_data$y),
+        label=(1:x$n_splits)), size=2, alpha = .8)
+    }
   }
   if (plot_org_points) {
     org_data = data.frame(x = x$x_org, y = x$f_org)
-    p = p + geom_line(data = org_data, aes(x = x, y = y), alpha = .3) +
-      geom_point(data = org_data, aes(x = x, y = y), alpha = .4)
+    p = p + geom_line(data = org_data, aes(x = x, y = y), alpha = .3) #+
+      #geom_point(data = org_data, aes(x = x, y = y), alpha = .4)
   }
   p + ggtitle(title)
 }
