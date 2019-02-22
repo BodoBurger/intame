@@ -33,51 +33,53 @@ library("mlr")
 library("ame")
 library("patchwork")
 theme_set(theme_light())
-set.seed(4218)
 ```
 
-
 ```{r}
-set.seed(4219)
-n = 500
-x = runif(n, min = 0, max = 1)
-x1 = runif(n, min=0, max=1) + .5*x
-x2 = runif(n, min=0, max=1) + .5*x
-x_o_cor = runif(n, min=0, max=1) + .5*x
-x_o_indep = runif(n, min=0, max=1) + .5*runif(n, 0, 1)
 y1 = function(x) 4*x
 y2 = function(x) -4 * cos(4*pi*x) * x + 4
-y = y1(x1) + y2(x2) + rnorm(n, 0, .5) + 20*x_o_cor^2 + 20*x_o_indep^2
-df = data.frame(y, x1, x2)
-df.full = data.frame(y, x1, x2, x_o_cor, x_o_indep)
+dgp = function(n, y1, y2) {
+  x = runif(n, min = 0, max = 1)
+  x1 = runif(n, min=0, max=1) + .5*x
+  x2 = runif(n, min=0, max=1) + .5*x
+  x_o_cor = runif(n, min=0, max=1) + .5*x
+  x_o_indep = runif(n, min=0, max=1) + .5*runif(n, 0, 1)
+  y = y1(x1) + y2(x2) + rnorm(n, 0, .5) + 20*x_o_cor^2 + 20*x_o_indep^2
+  data.frame(y, x1, x2, x_o_cor, x_o_indep)
+}
+set.seed(4219)
+df = dgp(n = 500, y1, y2)
 knitr::kable(head(df))
-knitr::kable(cor(df.full)[,-1])
-qplot(x1, y1(x1), geom = "line") + ggtitle("\"True effect\" for x1") +
-qplot(x2, y2(x2), geom = "line") + ggtitle("\"True effect\" for x2")
+knitr::kable(cor(df)[,-1])
+qplot(df$x1, y1(df$x1), geom = "line") + ggtitle("\"True effect\" for x1") +
+qplot(df$x2, y2(df$x2), geom = "line") + ggtitle("\"True effect\" for x2")
 ```
 
 ```{r fit-neural-network}
-lm.mod = lm(y ~ ., df)
-plotPrediction(lm.mod, df, "x2")
-lm.mod.full = lm(y ~ x1 + x2 + I(x_o_cor^2) + I(x_o_indep^2), df.full)
-lm.mod.full
+lm.mod.omitted = lm(y ~ x1 + x2, df)
+lm.mod.omitted
+lm.mod = lm(y ~ x1 + x2 + I(x_o_cor^2) + I(x_o_indep^2), df)
+lm.mod
 
-tsk = makeRegrTask(data = df.full, target = "y")
+df_test = dgp(1000, y1, y2)
+mean((df_test$y - predict(lm.mod, df_test))^2) # test set MSE
+
+tsk = makeRegrTask(data = df, target = "y")
 nnet.lrn = makeLearner("regr.nnet", skip = FALSE, size = 20, decay = 0.0001,
                        maxit = 1000, trace = FALSE)
 nnet.mod = train(nnet.lrn, tsk)
 plotPrediction(nnet.mod, tsk, "x2")
+performance(predict(nnet.mod, newdata = df_test), list(mse)) # test set MSE
 ```
 
 ## ALE predictions to fit
 
 ```{r ALE}
-nnet.ale1 = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
+nnet.ale1 = computeALE(nnet.mod$learner.model, df, "x1", grid.size = 30)
 plot(nnet.ale1)
 px1 = nnet.ale1$fp_x
 pf1 = nnet.ale1$fp_f
-
-nnet.ale2 = computeALE(nnet.mod$learner.model, df.full, "x2", grid.size = 40)
+nnet.ale2 = computeALE(nnet.mod$learner.model, df, "x2", grid.size = 30)
 plot(nnet.ale2)
 px2 = nnet.ale2$fp_x
 pf2 = nnet.ale2$fp_f
@@ -88,16 +90,15 @@ pf2 = nnet.ale2$fp_f
 ```{r}
 saf_x1 = split_and_fit(px1, pf1, threshold = .95)
 plot(saf_x1)
-saf_x1$splits
-saf_x1$metrics
+saf_x1
 
-saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .95, max_splits = 5)
+saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .8, max_splits = 20)
 plot(saf_x2)
-px2[saf_x2$splits]
-saf_x2$metrics
+saf_x2
 
-saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .95, max_splits = 5)
+saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .95, max_splits = 20)
 plot(saf_x2.RSS)
+saf_x2.RSS
 ```
 
 ## Ideas

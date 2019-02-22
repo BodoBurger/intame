@@ -34,6 +34,7 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
   opt_models = list(mod_0)
   if (compare_metric_values(opt_metric, threshold)) {
   } else {
+    cat(".")
     while(TRUE) {
       n_segments = length(splits) + 2
       splits_remaining = (2:(l-1))[!(2:(l-1) %in% splits)] # all remaining split.points
@@ -64,9 +65,12 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
       metrics = c(metrics, opt_metric)
       if (compare_metric_values(opt_metric, threshold) ||
           length(splits) == max_splits) {
-        print("Enough splits.")
+        cat(" Done.\n")
+        cat(format(paste0("Metric (", method, "):"), width = 18, justify = "right"), opt_metric, "\n")
+        cat(" Number of splits:", length(splits), "\n")
         break
       }
+      cat("|.")
     }
   }
   structure(list(models = opt_models,
@@ -76,7 +80,23 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
                  method = method,
                  threshold = threshold,
                  max_splits = max_splits),
-    class = "IntamePartition")
+    class = c("IntamePartition", "list"))
+}
+
+#' @export
+print.IntamePartition = function(x, ...) {
+  l = length(x$splits)
+  cat("### Intame Partition ###\n")
+  if (l == 0) {
+    width = 6
+    cat("     #  ", format(0, width = width), "\n")
+    cat(" Split: ", format(NA, width = width), "\n")
+  } else {
+    width = max(6, max(sapply(x$splits, nchar))+1)
+    cat("     #  ", format(0:length(x$splits), width = width), "\n")
+    cat(" Split: ", format(c(NA, x$x_org[x$splits]), width = width, digits = 3), "\n")
+  }
+  cat("Metric: ", format(x$metrics, width = width, digits = 3), "\n")
 }
 
 #' Visualize IntamePartition
@@ -105,12 +125,13 @@ plot.IntamePartition = function(x, title = "IntamePartition",
   p = ggplot() +
     geom_line(data = gg_data, aes(x = x, y = y, group = id), color = "blue")
   if (length(x$splits) > 0) {
-    p = p + geom_vline(xintercept = x$x_org[x$splits], linetype = 3, size = .4)
+    p = p + geom_vline(xintercept = x$x_org[x$splits], linetype = 3, size = .6,
+      col = "darkgray", alpha = 1)
   }
   if (plot_org_points) {
     org_data = data.frame(x = x$x_org, y = x$f_org)
-    p = p + geom_line(data = org_data, aes(x = x, y = y)) +
-      geom_point(data = org_data, aes(x = x, y = y))
+    p = p + geom_line(data = org_data, aes(x = x, y = y), alpha = .3) +
+      geom_point(data = org_data, aes(x = x, y = y), alpha = .4)
   }
   p + ggtitle(title)
 }
