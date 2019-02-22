@@ -60,7 +60,7 @@ computePD = function(model, data, feature,
                      l = "default", wp = 0,
                      derivative = FALSE, multiclass = FALSE) {
   checkmate::assert_choice(feature, colnames(data))
-  checkmate::assertFunction(predict.fun, args = c("object"))
+  checkmate::assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
     grid.size = nrow(data)/5
@@ -77,9 +77,9 @@ computePD = function(model, data, feature,
       l = nrow(data)
     } else lokal = TRUE
   }
-  checkmate::assertNumeric(wp, max.len = 1)
-  checkmate::assertLogical(derivative)
-  checkmate::assertLogical(multiclass)
+  checkmate::assert_numeric(wp, max.len = 1)
+  checkmate::assert_logical(derivative)
+  checkmate::assert_logical(multiclass)
 
   ##############################################################################
   x = data[, feature]

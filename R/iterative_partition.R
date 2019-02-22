@@ -7,15 +7,25 @@
 #' @param f [\code{numeric}]
 #' @param method [\code{character(1)}]
 #'   Implemented methods: "WMSR2" (weighted mean squared R squared),
-#'                        "WMR2" (weighted mean R squared).
+#'                        "WMR2" (weighted mean R squared),
+#'                        "WMRSS" (weighted mean of residual sum of squares)
 #' @param threshold [\code{numeric}] Stopping criterium.
 #' @param max_splits [\code{integer}] Stopping criterium.
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-split_and_fit = function(x, f, method = "WMSR2", threshold = .95, max_splits = 10) {
-  threshold = new_metric(method, threshold)
+split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20) {
+  checkmate::assert_numeric(x)
+  checkmate::assert_numeric(f)
+  checkmate::assert(length(x) == length(f))
+  checkmate::assert_choice(method, choices = ImplementedMetrics)
+  checkmate::assert_numeric(threshold, len = 1)
+  checkmate::assert_integerish(max_splits, len = 1)
   l = length(x)
+  x_sorted = sort(x, index.return = TRUE)
+  x = x_sorted$x
+  f = f[x_sorted$ix]
+  threshold = new_metric(method, threshold)
   splits = integer(0)
   mod_0 = lm(f ~ x, x = TRUE)
   opt_metric = new_metric(method,
@@ -69,11 +79,25 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .95, max_splits = 1
     class = "IntamePartition")
 }
 
+#' Visualize IntamePartition
+#'
+#' @param x object of class "IntamePartition
+#' @param title [\code{character(1)}] Plot title.
+#' @param plot_org_points Show points that were devided into partitions.
+#' @param return_data Return data.frame to create individual plots
+#' @param ... ignored
+#'
+#' @return \code{\link[ggplot2]{ggplot}} object (if \code{return_data=FALSE}).
+#'
 #' @export
 plot.IntamePartition = function(x, title = "IntamePartition",
                                 plot_org_points = TRUE,
                                 return_data = FALSE,
                                 ...) {
+  checkmate::assert_class(x, classes = "IntamePartition")
+  checkmate::assert_character(title, len = 1)
+  checkmate::assert_logical(plot_org_points, len = 1)
+  checkmate::assert_logical(return_data, len = 1)
   gg_data = splits_plot_points(x)
   if (return_data) {
     return(gg_data)

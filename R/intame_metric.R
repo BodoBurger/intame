@@ -1,3 +1,6 @@
+#' constant
+ImplementedMetrics = c("WMSR2", "WMR2", "WMRSS")
+
 #' constructor for S3 class "IntameMetric"
 #'
 #' @param name [\code{character(1)}] Name of (sub-)class.
@@ -10,6 +13,8 @@
 #' @examples
 #' new_metric("WMSR2", .5)
 new_metric = function(name, x = numeric()) {
+  checkmate::assert_choice(name, ImplementedMetrics)
+  checkmate::assert_numeric(x)
   if (name == "WMSR2" || name == "WMR2") name = c(name, "R2")
   structure(x, class = c(name, "IntameMetric", "numeric"))
 }
@@ -34,6 +39,8 @@ print.IntameMetric = function(x, ...) {
 #' model = lm(mpg ~ disp, mtcars)
 #' extract_metric_part_from_lm(new_metric("WMSR2"), model)
 extract_metric_part_from_lm = function(metric, model) {
+  checkmate::assert_class(metric, "IntameMetric")
+  checkmate::assert_class(model, "lm")
   UseMethod("extract_metric_part_from_lm")
 }
 
@@ -45,6 +52,8 @@ extract_metric_part_from_lm = function(metric, model) {
 #' @return [\code{logical(1)}]
 #' @export
 compare_metric_values = function(metric, other_metric) {
+  checkmate::assert_class(metric, "IntameMetric")
+  checkmate::assert_class(other_metric, "IntameMetric")
   UseMethod("compare_metric_values")
 }
 
@@ -57,6 +66,9 @@ compare_metric_values = function(metric, other_metric) {
 #' @return same class as \code{metric}
 #' @export
 aggregate_metric_parts = function(metric, models, weights) {
+  checkmate::assert_class(metric, "IntameMetric")
+  checkmate::assert_list(models)
+  checkmate::assert_class(models[[1]], "lm")
   UseMethod("aggregate_metric_parts")
 }
 
