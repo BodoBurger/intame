@@ -107,7 +107,7 @@ saf_x2.RSS
 
 ## Remarks
 
-### Preference for adjacent points
+### Preference for adjacent, left-side points
 
 Comparing weighted means of the segments' R2 is important
 because without it there was a strong preference for adjacent points 
@@ -116,15 +116,54 @@ because without it there was a strong preference for adjacent points
 Further, due to starting at the left side left split points are preferred.
 Problem?
 
-### Slope influences splits when using R2
+### A trend influences splits when using R2
 
-The higher the slope in a segment, the more likely it is being split
+A trend might incluence when the algorithm stops when using R2.
+The higher the slope in a segment, the more likely it is being split. True?
 
-```{r different-slopes}
-nnet.ale1_flat = computeALE(nnet.mod$learner.model, df.full, "x1", grid.size = 40)
-plot(nnet.ale1_flat)
-px1 = nnet.ale1$fp_x
-pf1 = nnet.ale1$fp_f
+```{r slope-data}
+set.seed(4219)
+n = 100
+x_min = 0; x_max = 10
+x1 = c(x_min, runif(n-2, x_min, x_max), x_max)
 ```
 
-### Slope incluences stopping criterium when using R2
+First example has a trend that dominates the cyclical component:
+
+```{r slope-small-cycles}
+y_flat = function(x) sin(.5*pi*x)
+y_steep = function(x) sin(.5*pi*x) + x
+ggplot() +
+  geom_line(aes(x = x1, y = y_flat(x1), col = "y_flat")) +
+  geom_line(aes(x = x1, y = y_steep(x1), col = "y_steep"))
+saf_flat = split_and_fit(x1, y_flat(x1), "WMR2")
+saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
+plot(saf_flat) + ylim(-1.5, 11) +
+plot(saf_steep) + ylim(-1.5, 11)
+saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS")
+saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS")
+plot(saf_flat.RSS) + ylim(-1.5, 11) +
+plot(saf_steep.RSS) + ylim(-1.5, 11)
+```
+
+"RSS" uses that same amount of splits (none) regardless of the trend.
+"R2" probably worse here as its metric depends on the size of the trend.
+
+Second example has a bigger cyclical component:
+
+```{r slope-big-cycles}
+y_flat_bc = function(x) 4 * sin(.5*pi*x)
+y_steep_bc = function(x) 4 * sin(.5*pi*x) + x
+saf_flat_bc = split_and_fit(x1, y_flat_bc(x1), "WMR2")
+saf_steep_bc = split_and_fit(x1, y_steep_bc(x1), "WMR2")
+plot(saf_flat_bc) + ylim(-6, 15) +
+plot(saf_steep_bc) + ylim(-6, 15)
+saf_flat_bc_RSS = split_and_fit(x1, y_flat_bc(x1), "WMRSS")
+saf_steep_bc_RSS = split_and_fit(x1, y_steep_bc(x1), "WMRSS")
+plot(saf_flat_bc_RSS) + ylim(-6, 15) +
+plot(saf_steep_bc_RSS) + ylim(-6, 15)
+```
+
+Same number of splits for both methods.
+
+### Examples for saturated effect

@@ -112,13 +112,14 @@ print.IntamePartition = function(x, ...) {
 #' @return \code{\link[ggplot2]{ggplot}} object (if \code{return_data=FALSE}).
 #'
 #' @export
-plot.IntamePartition = function(x, title = "IntamePartition",
+plot.IntamePartition = function(x, title = "default",
                                 plot_org_points = TRUE,
                                 show_split_numbers = TRUE,
                                 return_data = FALSE,
                                 ...) {
   checkmate::assert_class(x, classes = "IntamePartition")
   checkmate::assert_character(title, len = 1)
+  if (title == "default") title = paste("Partition using", x$method)
   checkmate::assert_logical(plot_org_points, len = 1)
   checkmate::assert_logical(show_split_numbers, len = 1)
   checkmate::assert_logical(return_data, len = 1)
