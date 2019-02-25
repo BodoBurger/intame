@@ -94,7 +94,7 @@ saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .8, max_splits = 
 plot(saf_x2)
 saf_x2
 
-saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .95, max_splits = 20)
+saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .1, max_splits = 5)
 plot(saf_x2.RSS)
 saf_x2.RSS
 ```
@@ -121,7 +121,7 @@ The higher the slope in a segment, the more likely it is being split. True?
 
 ```{r slope-data}
 set.seed(4219)
-n = 100
+n = 50
 x_min = 0; x_max = 10
 x1 = c(x_min, runif(n-2, x_min, x_max), x_max)
 ```
@@ -138,14 +138,17 @@ saf_flat = split_and_fit(x1, y_flat(x1), "WMR2")
 saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
 plot(saf_flat) + ylim(-1.5, 11) +
 plot(saf_steep) + ylim(-1.5, 11)
-saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS")
-saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS")
+saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS", .1)
+saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS", .1)
 plot(saf_flat.RSS) + ylim(-1.5, 11) +
 plot(saf_steep.RSS) + ylim(-1.5, 11)
 ```
 
-"RSS" uses that same amount of splits (none) regardless of the trend.
-"R2" probably worse here as its metric depends on the size of the trend.
+"RSS" metric does not depend on the size of the trend.
+"R2" metric depends on the size of the trend?
+
+But what is the meaning of the threshold for "RSS"?
+Stopping criterium unclear.
 
 Second example has a bigger cyclical component:
 
@@ -165,3 +168,32 @@ plot(saf_steep_bc_RSS) + ylim(-6, 15)
 Same number of splits for both methods.
 
 ### Examples for saturated effect
+
+### Other models
+
+Here we try a tree-based method, but as long as the ALE plot is similar to
+the one above the underlying method does not play a role in the results of
+this algorithm.
+
+```{r}
+gbm.predict.fun = function(object, newdata) predict(object, newdata, n.trees = 1000)
+gbm.lrn = makeLearner("regr.gbm", n.trees = 1000)
+gbm.mod = train(gbm.lrn, tsk)
+performance(predict(gbm.mod, newdata = df_test), list(mse)) # test set MSE
+
+gbm.ale1 = computeALE(gbm.mod$learner.model, df, "x1", grid.size = 30,
+  predict.fun = gbm.predict.fun)
+plot(gbm.ale1)
+gbm.ale2 = computeALE(gbm.mod$learner.model, df, "x2", grid.size = 30,
+  predict.fun = gbm.predict.fun)
+plot(gbm.ale2)
+
+saf_x1 = split_and_fit(gbm.ale1$fp_x, gbm.ale1$fp_f, threshold = .9)
+plot(saf_x1)
+saf_x1
+
+saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .9, max_splits = 20)
+plot(saf_x2)
+saf_x2
+```
+
