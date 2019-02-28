@@ -49,15 +49,15 @@ computeALE = function(model, data, feature,
                       grid.size = "default",
                       predict.fun = predict,
                       multiclass = FALSE, minbucket = 1) {
-  checkmate::assert_choice(feature, colnames(data))
-  checkmate::assert_function(predict.fun, args = c("object"))
+  assert_choice(feature, colnames(data))
+  assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
     grid.size = nrow(data)/5
     if (grid.size > 100) grid.size = 100
-  } else checkmate::assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
+  } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
-  checkmate::assert_logical(multiclass)
+  assert_logical(multiclass)
 
   ##############################################################################
   x = data[, feature]

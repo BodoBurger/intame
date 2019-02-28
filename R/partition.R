@@ -34,10 +34,10 @@
 #'   geom_vline(aes(xintercept = breaks.cluster+.03,
 #'     color = "cluster"))
 partition = function(x, y, intervals, part.method="CART") {
-  checkmate::assert_numeric(x)
-  checkmate::assert_numeric(y)
+  assert_numeric(x)
+  assert_numeric(y)
   if (length(x) != length(y)) stop("x and y have to have the same length.")
-  checkmate::assert_integerish(intervals)
+  assert_integerish(intervals)
 
   if (part.method == "CART") return(partitionCART(x, y, (intervals-1)))
   #else if (part.method == "MOB") return(partitionMOB(x, y, intervals))

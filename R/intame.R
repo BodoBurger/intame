@@ -52,8 +52,8 @@ intame = function(model, data, feature,
                   intervals = 5,
                   predict.fun = function(object, newdata) predict(object, newdata),
                   method = "ALE", breaks = NULL, ...) {
-  checkmate::assert_choice(feature, colnames(data))
-  checkmate::assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
+  assert_choice(feature, colnames(data))
+  assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
 
   if (method == "ALE") {
     FE = computeALE(model = model, data = data, feature = feature,

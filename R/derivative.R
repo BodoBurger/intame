@@ -17,11 +17,11 @@ derivative = function(x, feature, data, model,
   predict.fun = function(object, newdata) predict(object, newdata = newdata), ...) {
   # FIXME: currently we only use x as vector of length nrow(data),
   # x of length 1 is necessary for partial dependence derivatives
-  checkmate::assert(checkmate::check_vector(x, len = 1),
-                    checkmate::check_vector(x, len = nrow(data)))
-  checkmate::assert_choice(feature, colnames(data))
-  checkmate::assert_class(x, class(data[[feature]]))
-  checkmate::assert_function(predict.fun, args = c("object", "newdata"))
+  assert(check_vector(x, len = 1),
+                    check_vector(x, len = nrow(data)))
+  assert_choice(feature, colnames(data))
+  assert_class(x, class(data[[feature]]))
+  assert_function(predict.fun, args = c("object", "newdata"))
   UseMethod("derivative")
 }
 

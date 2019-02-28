@@ -15,12 +15,12 @@
 #' @return object of class \code{IntamePartition}
 #' @export
 split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20) {
-  checkmate::assert_numeric(x)
-  checkmate::assert_numeric(f)
-  checkmate::assert(length(x) == length(f))
-  checkmate::assert_choice(method, choices = ImplementedMetrics)
-  checkmate::assert_numeric(threshold, len = 1)
-  checkmate::assert_integerish(max_splits, len = 1)
+  assert_numeric(x)
+  assert_numeric(f)
+  assert(length(x) == length(f))
+  assert_choice(method, choices = ImplementedMetrics)
+  assert_numeric(threshold, len = 1)
+  assert_integerish(max_splits, len = 1)
   l = length(x)
   x_sorted = sort(x, index.return = TRUE)
   x = x_sorted$x
@@ -117,12 +117,12 @@ plot.IntamePartition = function(x, title = "default",
                                 show_split_numbers = TRUE,
                                 return_data = FALSE,
                                 ...) {
-  checkmate::assert_class(x, classes = "IntamePartition")
-  checkmate::assert_character(title, len = 1)
+  assert_class(x, classes = "IntamePartition")
+  assert_character(title, len = 1)
   if (title == "default") title = paste("Partition using", x$method)
-  checkmate::assert_logical(plot_org_points, len = 1)
-  checkmate::assert_logical(show_split_numbers, len = 1)
-  checkmate::assert_logical(return_data, len = 1)
+  assert_logical(plot_org_points, len = 1)
+  assert_logical(show_split_numbers, len = 1)
+  assert_logical(return_data, len = 1)
   gg_data = splits_plot_points(x)
   if (return_data) {
     return(gg_data)

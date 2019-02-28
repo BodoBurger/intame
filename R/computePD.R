@@ -59,27 +59,27 @@ computePD = function(model, data, feature,
                      predict.fun = function(object, newdata) predict(object, newdata = newdata),
                      l = "default", wp = 0,
                      derivative = FALSE, multiclass = FALSE) {
-  checkmate::assert_choice(feature, colnames(data))
-  checkmate::assert_function(predict.fun, args = c("object"))
+  assert_choice(feature, colnames(data))
+  assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
     grid.size = nrow(data)/5
     if (grid.size > 100) grid.size = 100
-  } else checkmate::assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
+  } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
   lokal = FALSE
   if (l == "default") {
     l = nrow(data)
   } else {
-    checkmate::assert_integerish(l, max.len = 1)
+    assert_integerish(l, max.len = 1)
     if (l > nrow(data)) {
       warning("computePD: l greater than nrow(data). Set to nrow(data).")
       l = nrow(data)
     } else lokal = TRUE
   }
-  checkmate::assert_numeric(wp, max.len = 1)
-  checkmate::assert_logical(derivative)
-  checkmate::assert_logical(multiclass)
+  assert_numeric(wp, max.len = 1)
+  assert_logical(derivative)
+  assert_logical(multiclass)
 
   ##############################################################################
   x = data[, feature]
