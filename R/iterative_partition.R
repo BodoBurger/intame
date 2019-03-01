@@ -70,7 +70,7 @@ split_and_fit = function(x, f, metric_name = "WMSR2",
           metric_parts_tmp[i] = extract_metric_part_from_lm(mod_tmp[[i]], f_tmp,
             metric_name)
         }
-        metric_tmp = aggregate_metric_parts(metric_parts_tmp, weights_tmp, metric_name)
+        metric_tmp = weighted.mean(metric_parts_tmp, weights_tmp)
         if (compare_metric_values(metric_tmp, opt_metric, metric_name)) {
           opt_metric = metric_tmp
           opt_split = split_tmp
@@ -159,7 +159,9 @@ plot.IntamePartition = function(x, title = "default",
                                 ...) {
   assert_class(x, classes = "IntamePartition")
   assert_character(title, len = 1)
-  if (title == "default") title = paste("Partition using", x$metric_name)
+  if (title == "default") {
+    title = paste0("Partition using ", x$metric_name, ", greedy=", x$greedy)
+  }
   assert_logical(plot_org_points, len = 1)
   #assert_logical(show_split_numbers, len = 1)
   assert_logical(return_data, len = 1)
