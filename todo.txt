@@ -31,3 +31,27 @@
 
 - AME ersetzen durch ALE / PDeriv mit wenigen Splitpunkte neuberechnen
     - oder Mittelwert berechnen? Vergleich
+
+
+## Meeting 2019-02-25 Christoph
+
+- not greedy
+    - Startpunkt: vorigen Splitpunkt
+    - example: Parabel
+- alle Datenpunkte zwischen min und max berücksichtigt
+
+- User interface: "relevante Änderung" angeben
+- "Relevanzband"
+- relevant change
+   - default??? Anteile Gesamtvarianz?
+
+- binäres Problem?
+    -
+
+## Optimierung non-greedy
+- auf eine Metrik festlegen bzw. komplette funktion je Metrik?
+- Punkte samplen??? Macht glaube ich keinen Sinn; durch ALE eh schon ein diskretes Problem
+
+## Fragen Bernd
+- wie non-greedy algorithm optimieren?
+
