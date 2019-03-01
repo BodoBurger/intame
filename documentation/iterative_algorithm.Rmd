@@ -90,11 +90,11 @@ saf_x1 = split_and_fit(px1, pf1, threshold = .95)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .8, max_splits = 20)
+saf_x2 = split_and_fit(px2, pf2, "WMSR2", threshold = .8, max_splits = 20)
 plot(saf_x2)
 saf_x2
 
-saf_x2.RSS = split_and_fit(px2, pf2, method = "WMRSS", threshold = .1, max_splits = 5)
+saf_x2.RSS = split_and_fit(px2, pf2, "WMRSS", threshold = .1, max_splits = 20)
 plot(saf_x2.RSS)
 saf_x2.RSS
 ```
@@ -121,8 +121,8 @@ The higher the slope in a segment, the more likely it is being split. True?
 
 ```{r slope-data}
 set.seed(4219)
-n = 50
 x_min = 0; x_max = 10
+n = 100
 x1 = c(x_min, runif(n-2, x_min, x_max), x_max)
 ```
 
@@ -136,8 +136,8 @@ ggplot() +
   geom_line(aes(x = x1, y = y_steep(x1), col = "y_steep"))
 saf_flat = split_and_fit(x1, y_flat(x1), "WMR2")
 saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
-plot(saf_flat) + ylim(-1.5, 11) +
-plot(saf_steep) + ylim(-1.5, 11)
+plot(saf_flat) + ylim(-2, 11) +
+plot(saf_steep) + ylim(-2, 11)
 saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS", .1)
 saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS", .1)
 plot(saf_flat.RSS) + ylim(-1.5, 11) +
@@ -145,7 +145,7 @@ plot(saf_steep.RSS) + ylim(-1.5, 11)
 ```
 
 "RSS" metric does not depend on the size of the trend.
-"R2" metric depends on the size of the trend?
+"R2" metric depends on the size of the trend.
 
 But what is the meaning of the threshold for "RSS"?
 Stopping criterium unclear.
@@ -197,3 +197,20 @@ plot(saf_x2)
 saf_x2
 ```
 
+## Profiling / Benchmarks
+
+```{r profiling, benchmarks}
+library(profvis)
+profvis(split_and_fit(x1, y_flat(x1), "WMR2"))
+profvis(split_and_fit(x1, y_flat(x1), "WMRSS",threshold = .1, max_splits = 3, greedy = FALSE))
+
+library(microbenchmark)
+microbenchmark(
+  split_and_fit(x1, y_flat(x1), "WMR2", max_splits = 2),
+  split_and_fit(x1, y_flat(x1), "WMR2", max_splits = 2, greedy = FALSE),
+  times = 5)
+
+saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
+saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS", .1)
+saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS", .1)
+```
