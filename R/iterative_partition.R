@@ -9,12 +9,16 @@
 #'   Implemented methods: "WMSR2" (weighted mean squared R squared),
 #'                        "WMR2" (weighted mean R squared),
 #'                        "WMRSS" (weighted mean of residual sum of squares)
-#' @param threshold [\code{numeric}] Stopping criterium.
-#' @param max_splits [\code{integer}] Stopping criterium.
+#' @param threshold [\code{numeric(1)}] Stopping criterium.
+#' @param max_splits [\code{integer(1)}] Stopping criterium.
+#' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
+#'   combination in the next step.
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20) {
+split_and_fit = function(x, f, method = "WMSR2",
+                         threshold = .9, max_splits = 20,
+                         greedy = TRUE) {
   assert_numeric(x)
   assert_numeric(f)
   assert(length(x) == length(f))
@@ -22,49 +26,61 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
   assert_numeric(threshold, len = 1)
   assert_integerish(max_splits, len = 1)
   l = length(x)
-  x_sorted = sort(x, index.return = TRUE)
-  x = x_sorted$x
-  f = f[x_sorted$ix]
-  threshold = new_metric(method, threshold)
-  splits = integer(0)
-  mod_0 = lm(f ~ x, x = TRUE)
-  opt_metric = new_metric(method,
-    extract_metric_part_from_lm(new_metric(method), mod_0))
+  x_order = order(x)
+  x = x[x_order]
+  f = f[x_order]
+  mod_0 = .lm.fit(cbind(1, x), f)
+  opt_metric = extract_metric_part_from_lm(mod_0, f, metric_name = method)
   metrics = opt_metric
   opt_models = list(mod_0)
+  opt_x = x
+  opt_split = integer(0)
   n_splits = 0
-  if (!compare_metric_values(opt_metric, threshold)) {
+  if (!compare_metric_values(opt_metric, threshold, metric_name = method)) {
     cat(".")
     while(TRUE) {
-      n_segments = n_splits + 2
-      splits_remaining = (2:(l-1))[!(2:(l-1) %in% splits)] # all remaining split.points
-      metrics_new_split = new_metric(method, numeric(length(splits_remaining)))
-      names(metrics_new_split) = splits_remaining
-      opt_split = splits_remaining[1]
-      for (split in splits_remaining) {
-        x_tmp = vector("list", n_segments)
-        f_tmp = vector("list", n_segments)
-        mod_tmp = vector("list", n_segments)
-        weights = numeric(n_segments)
-        bounds = sort(c(1, l, splits, split))
+      n_splits = n_splits + 1
+      n_segments = n_splits + 1
+      if (greedy) {
+        split_combinations = rbind(
+          matrix(opt_split, nrow = n_splits - 1, ncol = l-1-n_splits),
+          (2:(l-1))[!(2:(l-1) %in% opt_split)])
+        if (n_splits > 1) split_combinations = apply(split_combinations, 2, sort.int)
+      } else {
+        split_combinations = combn(2:(l-1), n_splits)
+      }
+      n_combinations = ncol(split_combinations)
+      #opt_split = sort.int(split_combinations[, 1])
+
+      x_tmp = vector("list", n_segments)
+      f_tmp = vector("list", n_segments)
+      mod_tmp = vector("list", n_segments)
+      weights_tmp = numeric(n_segments)
+      metric_parts = numeric(n_segments)
+
+      for (k in 1:n_combinations) {
+        split = split_combinations[, k]
+        bounds = c(1, split, l)
         for (i in seq_len(n_segments)) {
-          x_tmp[[i]] = x[bounds[i]:bounds[i+1]]
-          f_tmp[[i]] = f[bounds[i]:bounds[i+1]]
-          mod_tmp[[i]] = lm(f_tmp[[i]] ~ x_tmp[[i]], x = TRUE)
-          weights[i] = length(x_tmp[[i]])
+          indices = bounds[i]:bounds[i+1]
+          x_tmp[[i]] = x[indices]
+          f_tmp[[i]] = f[indices]
+          mod_tmp[[i]] = .lm.fit(cbind(1, x_tmp[[i]]), f_tmp[[i]])
+          weights_tmp[i] = length(x_tmp[[i]])
+          metric_parts[i] = extract_metric_part_from_lm(mod_tmp[[i]], f_tmp[[i]],
+            metric_name = method)
         }
-        metric = aggregate_metric_parts(opt_metric, mod_tmp, weights)
-        metrics_new_split[as.character(split)] = metric
-        if (compare_metric_values(metric, opt_metric)) {
+        metric = aggregate_metric_parts(metric_parts, weights_tmp,
+          metric_name = method)
+        if (compare_metric_values(metric, opt_metric, metric_name = method)) {
           opt_metric = metric
           opt_split = split
           opt_models = mod_tmp
+          opt_x = x_tmp
         }
       }
-      splits = c(splits, opt_split)
-      n_splits = length(splits)
       metrics = c(metrics, opt_metric)
-      if (compare_metric_values(opt_metric, threshold) ||
+      if (compare_metric_values(opt_metric, threshold, metric_name = method) ||
           n_splits == max_splits) {
         cat(" Done.\n")
         cat(format(paste0("Metric (", method, "):"), width = 18, justify = "right"), opt_metric, "\n")
@@ -75,32 +91,37 @@ split_and_fit = function(x, f, method = "WMSR2", threshold = .9, max_splits = 20
     }
   }
   structure(list(models = opt_models,
-                 splits = splits,
+                 splits = opt_split,
                  n_splits = n_splits,
                  metrics = metrics,
                  x_org = x, f_org = f,
                  method = method,
                  threshold = threshold,
-                 max_splits = max_splits),
+                 max_splits = max_splits,
+                 greedy = greedy),
     class = c("IntamePartition", "list"))
 }
 
+# TODO Split Reihenfolge Unterschied zwischen greedy and non-greedy
 #' @export
 print.IntamePartition = function(x, ...) {
+  metrics_rounded = round(x$metrics, digits = 4)
   cat("### Intame Partition ###\n")
   if (x$n_splits == 0) {
     width = 6
     cat("     #  ", format(0, width = width), "\n")
     cat(" Split: ", format(NA, width = width), "\n")
   } else {
-    width = max(6, max(sapply(x$splits, nchar))+1)
+    x_splits_rounded = round(x$x_org[x$splits], digits = 4)
+    width = max(6, max(sapply(x_splits_rounded, nchar))+1,
+                   max(sapply(metrics_rounded, nchar))+1)
     cat("     #  ", format(0:x$n_splits, width = width), "\n")
-    cat(" Split: ", format(c(NA, x$x_org[x$splits]), width = width, digits = 3), "\n")
+    cat(" Split: ", format(c(NA, x_splits_rounded), width = width), "\n")
   }
-  cat("Metric: ", format(x$metrics, width = width, digits = 3), "\n")
+  cat("Metric: ", format(metrics_rounded, width = width), "\n")
 }
 
-#' Visualize IntamePartition
+#' Visualize IntamePartition NEEDS TO BE FIXED
 #'
 #' @param x object of class "IntamePartition
 #' @param title [\code{character(1)}] Plot title.

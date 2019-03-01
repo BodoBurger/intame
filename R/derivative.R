@@ -18,7 +18,7 @@ derivative = function(x, feature, data, model,
   # FIXME: currently we only use x as vector of length nrow(data),
   # x of length 1 is necessary for partial dependence derivatives
   assert(check_vector(x, len = 1),
-                    check_vector(x, len = nrow(data)))
+         check_vector(x, len = nrow(data)))
   assert_choice(feature, colnames(data))
   assert_class(x, class(data[[feature]]))
   assert_function(predict.fun, args = c("object", "newdata"))
