@@ -87,19 +87,23 @@ pf2 = nnet.ale2$fp_f
 ## Partition AL predictions
 
 ```{r}
-saf_x1 = split_and_fit(px1, pf1, threshold = .95)
+saf_x1 = iterative_partition(px1, pf1, threshold = .95)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = split_and_fit(px2, pf2, "WMSR2", threshold = .95, max_splits = 20)
+saf_x2 = iterative_partition(px2, pf2, "WMSR2", threshold = .9, max_splits = 10)
 plot(saf_x2)
 saf_x2
 
-saf_x2.RSS = split_and_fit(px2, pf2, "WMRSS", threshold = .3, max_splits = 20)
+intame_x2 = intame(nnet.mod$learner.model, df, "x2", fe_grid_size = grid.size)
+plot(intame_x2)
+intame_x2
+
+saf_x2.RSS = iterative_partition(px2, pf2, "WMRSS", threshold = .3, max_splits = 10)
 plot(saf_x2.RSS)
 saf_x2.RSS
 
-saf_x2_non_greedy = split_and_fit(px2, pf2, "WMSR2", threshold = .95, max_splits = 20,
+saf_x2_non_greedy = iterative_partition(px2, pf2, "WMSR2", threshold = .95, max_splits = 10,
   greedy = FALSE)
 plot(saf_x2_non_greedy)
 saf_x2_non_greedy
@@ -142,12 +146,12 @@ y_steep = function(x) sin(.5*pi*x) + x
 ggplot() +
   geom_line(aes(x = x1, y = y_flat(x1), col = "y_flat")) +
   geom_line(aes(x = x1, y = y_steep(x1), col = "y_steep"))
-saf_flat = split_and_fit(x1, y_flat(x1), "WMR2")
-saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
+saf_flat = iterative_partition(x1, y_flat(x1), "WMR2")
+saf_steep = iterative_partition(x1, y_steep(x1), "WMR2")
 plot(saf_flat) + ylim(-2, 11) +
 plot(saf_steep) + ylim(-2, 11)
-saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS", .1)
-saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS", .1)
+saf_flat.RSS = iterative_partition(x1, y_flat(x1), "WMRSS", .1)
+saf_steep.RSS = iterative_partition(x1, y_steep(x1), "WMRSS", .1)
 plot(saf_flat.RSS) + ylim(-1.5, 11) +
 plot(saf_steep.RSS) + ylim(-1.5, 11)
 ```
@@ -163,12 +167,12 @@ Second example has a bigger cyclical component:
 ```{r slope-big-cycles}
 y_flat_bc = function(x) 4 * sin(.5*pi*x)
 y_steep_bc = function(x) 4 * sin(.5*pi*x) + x
-saf_flat_bc = split_and_fit(x1, y_flat_bc(x1), "WMR2")
-saf_steep_bc = split_and_fit(x1, y_steep_bc(x1), "WMR2")
+saf_flat_bc = iterative_partition(x1, y_flat_bc(x1), "WMR2")
+saf_steep_bc = iterative_partition(x1, y_steep_bc(x1), "WMR2")
 plot(saf_flat_bc) + ylim(-6, 15) +
 plot(saf_steep_bc) + ylim(-6, 15)
-saf_flat_bc_RSS = split_and_fit(x1, y_flat_bc(x1), "WMRSS")
-saf_steep_bc_RSS = split_and_fit(x1, y_steep_bc(x1), "WMRSS")
+saf_flat_bc_RSS = iterative_partition(x1, y_flat_bc(x1), "WMRSS")
+saf_steep_bc_RSS = iterative_partition(x1, y_steep_bc(x1), "WMRSS")
 plot(saf_flat_bc_RSS) + ylim(-6, 15) +
 plot(saf_steep_bc_RSS) + ylim(-6, 15)
 ```
@@ -196,11 +200,11 @@ gbm.ale2 = computeALE(gbm.mod$learner.model, df, "x2", grid.size = 30,
   predict.fun = gbm.predict.fun)
 plot(gbm.ale2)
 
-saf_x1 = split_and_fit(gbm.ale1$fp_x, gbm.ale1$fp_f, threshold = .9)
+saf_x1 = iterative_partition(gbm.ale1$fp_x, gbm.ale1$fp_f, threshold = .9)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = split_and_fit(px2, pf2, method = "WMSR2", threshold = .9, max_splits = 20)
+saf_x2 = iterative_partition(px2, pf2, method = "WMSR2", threshold = .9, max_splits = 20)
 plot(saf_x2)
 saf_x2
 ```
@@ -209,19 +213,19 @@ saf_x2
 
 ```{r profiling, benchmarks}
 library(profvis)
-profvis(split_and_fit(x1, y_flat(x1), "WMR2"))
-profvis(split_and_fit(x1, y_flat(x1), "WMRSS",threshold = .1, max_splits = 3, greedy = FALSE))
+profvis(iterative_partition(x1, y_flat(x1), "WMR2"))
+profvis(iterative_partition(x1, y_flat(x1), "WMRSS",threshold = .1, max_splits = 3, greedy = FALSE))
 
-profvis(split_and_fit(px2, pf2, "WMSR2", threshold = .95, max_splits = 20,
+profvis(iterative_partition(px2, pf2, "WMSR2", threshold = .95, max_splits = 20,
   greedy = FALSE))
 
 library(microbenchmark)
 microbenchmark(
-  split_and_fit(x1, y_flat(x1), "WMR2", max_splits = 2),
-  split_and_fit(x1, y_flat(x1), "WMR2", max_splits = 2, greedy = FALSE),
+  iterative_partition(x1, y_flat(x1), "WMR2", max_splits = 2),
+  iterative_partition(x1, y_flat(x1), "WMR2", max_splits = 2, greedy = FALSE),
   times = 5)
 
-saf_steep = split_and_fit(x1, y_steep(x1), "WMR2")
-saf_flat.RSS = split_and_fit(x1, y_flat(x1), "WMRSS", .1)
-saf_steep.RSS = split_and_fit(x1, y_steep(x1), "WMRSS", .1)
+saf_steep = iterative_partition(x1, y_steep(x1), "WMR2")
+saf_flat.RSS = iterative_partition(x1, y_flat(x1), "WMRSS", .1)
+saf_steep.RSS = iterative_partition(x1, y_steep(x1), "WMRSS", .1)
 ```

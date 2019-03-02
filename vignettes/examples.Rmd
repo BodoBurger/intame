@@ -30,7 +30,7 @@ theme_set(theme_light())
 ```{r}
 library(nnet)
 set.seed(4219)
-n = 500
+n = 200
 x = runif(n, min = 0, max = 1)
 x1 = runif(n, min=0, max=1) + .5*x
 x2 = runif(n, min=0, max=1) + .5*x
@@ -39,10 +39,10 @@ y = 4*x1 + y2(x2) + rnorm(n, 0, .5)
 df = data.frame(y, x1, x2)
 nnet.mod = nnet(y ~ ., df, size = 20, linout = TRUE,
   decay = 0.0001, maxit = 1000, trace = FALSE)
-AME.x1 = intame(nnet.mod, df, "x1", intervals = 2)
+AME.x1 = intame(nnet.mod, df, "x1")
 AME.x1
 plot(AME.x1)
-AME.x2 = intame(nnet.mod, df, "x2")
+AME.x2 = intame(nnet.mod, df, "x2", fe_grid_size = 20)
 AME.x2
 plot(AME.x2)
 ```
@@ -51,24 +51,23 @@ plot(AME.x2)
 
 ```{r, warning=FALSE}
 spam.data = mlr::getTaskData(mlr::spam.task)
-spam.fit = glm(type ~ ., data = spam.data, family = binomial(link = "logit"))
+spam.fit = suppressWarnings(glm(type ~ ., data = spam.data, family = binomial(link = "logit")))
 spam.predict = function(object, newdata) predict(object, newdata, type = "response")
 
 feat.select = c("charDollar", "hpl", "people") 
 spam.fit$coefficients[feat.select]
 ame::computeAME(spam.fit, spam.data, feat.select, predict.fun = spam.predict)
 
-intame.charDollar = intame(spam.fit, spam.data, "charDollar", intervals = 5,
-  predict.fun = spam.predict, method = "ALE")
+intame.charDollar = intame(spam.fit, spam.data, "charDollar",
+  predict.fun = spam.predict, fe_method = "ALE")
 summary(intame.charDollar)
 plot(intame.charDollar)
 
 plot(computeALE(spam.fit, spam.data, "charDollar", predict.fun = spam.predict))
-plot(computePD(spam.fit, spam.data, "charDollar", grid.size = 50,
+plot(computePD(spam.fit, spam.data, "charDollar", predict.fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "hpl", grid.size = 30,
   predict.fun = spam.predict))
-plot(computePD(spam.fit, spam.data, "hpl", grid.size = 100,
-  predict.fun = spam.predict))
-plot(computeALE(spam.fit, spam.data, "people", grid.size = 100,
+plot(computePD(spam.fit, spam.data, "people", grid.size = 30,
   predict.fun = spam.predict))
 ```
 

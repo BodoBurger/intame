@@ -141,7 +141,7 @@ plot(ALE.x2) +
 #### Compute AME given the intervals
 
 ```{r}
-AME.x2 = intame(nnet.mod$learner.model, df, "x2", breaks = breaks.ALE,
+AME.x2 = intame(nnet.mod$learner.model, df, "x2", x_splits = breaks.ALE,
   method = "PDeriv")
 AME.x2
 plot(AME.x2)

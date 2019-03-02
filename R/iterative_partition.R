@@ -14,12 +14,13 @@
 #' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
 #'   combination in the next step.
 #' @param verbose [\code{logical(1)}] Show console output.
+#' @param ... ignored
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-split_and_fit = function(x, f, metric_name = "WMSR2",
-                         threshold = .9, max_splits = 20,
-                         greedy = TRUE, verbose = TRUE) {
+iterative_partition = function(x, f, metric_name = "WMSR2",
+                               threshold = .9, max_splits = 10,
+                               greedy = FALSE, verbose = TRUE, ...) {
   assert_numeric(x)
   assert_numeric(f)
   assert(length(x) == length(f))

@@ -31,6 +31,7 @@
 #'   FALSE: Partial Dependence. TRUE: Partial Derivative.
 #' @param multiclass [\code{logical(1)}]\cr
 #'   If multiclassification task (TODO: try to infer this automatically).
+#' @param ... ignored
 #'
 #' @return [\code{PD}]
 #' @export
@@ -58,13 +59,13 @@ computePD = function(model, data, feature,
                      grid.size = "default", grid.method = "uniform",
                      predict.fun = function(object, newdata) predict(object, newdata = newdata),
                      l = "default", wp = 0,
-                     derivative = FALSE, multiclass = FALSE) {
+                     derivative = FALSE, multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
   assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
     grid.size = nrow(data)/5
-    if (grid.size > 100) grid.size = 100
+    if (grid.size > 40) grid.size = 40
   } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
   lokal = FALSE

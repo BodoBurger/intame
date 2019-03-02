@@ -23,6 +23,7 @@
 #' @param multiclass [\code{logical(1)}]\cr
 #'   If multiclassification task (TODO: try to infer this automatically).
 #' @param minbucket Not yet implemented.
+#' @param ... ignored
 #'
 #' @return [\code{ALE}]
 #' @export
@@ -48,13 +49,13 @@
 computeALE = function(model, data, feature,
                       grid.size = "default",
                       predict.fun = predict,
-                      multiclass = FALSE, minbucket = 1) {
+                      multiclass = FALSE, minbucket = 1, ...) {
   assert_choice(feature, colnames(data))
   assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
     grid.size = nrow(data)/5
-    if (grid.size > 100) grid.size = 100
+    if (grid.size > 40) grid.size = 40
   } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
   assert_logical(multiclass)
