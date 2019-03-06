@@ -138,7 +138,6 @@ print.Intame = function(x, ...) {
   print(x$AME)
 }
 
-# TODO: check char length of interval
 #' @export
 summary.Intame = function(object, ...) {
   cat("# Interval-based Marginal Effects for", object$feature, "#\n\n")
@@ -150,8 +149,6 @@ summary.Intame = function(object, ...) {
 }
 
 #' Visualize the result of intame
-#'
-#' TODO: add slope as label for each interval
 #'
 #' @param x [\code{intame}]
 #' @param title [\code{character(1)}] Plot title

@@ -122,9 +122,6 @@ print.IntamePartition = function(x, ...) {
   cat(x$metric, "\n")
 }
 
-# TODO show split history
-#      Split Reihenfolge Unterschied zwischen greedy and non-greedy
-#      show metric history
 # summary.IntamePartition = function(object, ...) {
 #   metrics_rounded = round(x$metrics, digits = 4)
 #   cat("### Intame Partition ###\n")

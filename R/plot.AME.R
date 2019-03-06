@@ -6,14 +6,6 @@
 #' @param model model object
 #' @param ... ignored
 #'
-#' @section TODOS:
-#' \itemize{
-#' \item Write tests (you can use examples from AME vignette)
-#' \item Wrapped.Model / task support
-#' \item classification support
-#' \item Facet of different models (i.e. draw multiple AME lines for one feature)
-#' }
-#'
 #' @export
 plot.AME = function(x, data, target, model = NA, ...) {
   AME = x

@@ -8,12 +8,6 @@
 #' @param intervals [\code{integer}]\cr Number of intervals.
 #' @param part.method c("CART", "cluster")
 #'
-#' @section TODOs:
-#' \itemize{
-#'   \item Write tests.
-#'   \item Alternative evaluation functions for cluster method.
-#' }
-#'
 #' @return split.points numeric(length(n.parts)-1)
 #' @export
 #'
@@ -44,11 +38,6 @@ partition = function(x, y, intervals, part.method="CART") {
   else if (part.method == "cluster") return(partitionCluster(x, y, intervals))
   else stop("Partition method \'", part.method, "\' not implemented.")
 }
-
-#' Use mob
-#partitionMOB = function(x, y, n.parts) {
-  #TODO
-#}
 
 #' Partition using CART algorithm
 #'

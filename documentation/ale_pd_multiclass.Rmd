@@ -122,7 +122,7 @@ plotPartialDependence(generatePartialDependenceData(gbm.mod, iris.task))
   It should be more like zero
 - Petal.Length: prob of setosa more plausible (zero for values )
 - Is this caused by extrapolation of Partial Dependence?
-- TODO: check ALEPlot here
+- check ALEPlot here
 
 ### Random Forest
 

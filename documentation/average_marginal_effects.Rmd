@@ -220,13 +220,14 @@ gbm.mod.mlr = train(gbm.lrn, regr.tsk)
 gbm.pred = predict(gbm.mod.mlr, regr.tsk)
 ```
 
-Training performance (TODO: replace by test performance)
 
 ```{r}
 performance(predict(lm.mod.mlr, regr.tsk), list(mse, rsq, expvar))
 performance(rf.pred, list(mse, rsq, expvar))
 performance(gbm.pred, list(mse, rsq, expvar))
 ```
+
+*Should be replaced by test performance.*
 
 ### Comparing AMEs
 

@@ -2,12 +2,6 @@
 #'
 #' Compute Partial Dependence with weighing or selecting observations based on distance.
 #'
-#' @section TODO:
-#' \itemize{
-#'   \item implement mlr models
-#'   \item factor features?
-#' }
-#'
 #' @template arg_model
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
@@ -30,7 +24,7 @@
 #' @param derivative [\code{logical(1)}]\cr
 #'   FALSE: Partial Dependence. TRUE: Partial Derivative.
 #' @param multiclass [\code{logical(1)}]\cr
-#'   If multiclassification task (TODO: try to infer this automatically).
+#'   If multiclassification task
 #' @param ... ignored
 #'
 #' @return [\code{PD}]

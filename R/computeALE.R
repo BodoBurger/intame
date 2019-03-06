@@ -2,17 +2,6 @@
 #'
 #' Implementation of \href{https://arxiv.org/abs/1612.08468}{Apley (2016) Visualizing the Effects of Predictor Variables in Black Box Supervised Learning Models}
 #'
-#' @section TODO:
-#' \itemize{
-#'   \item implement option for Apley's normalization
-#'   \item implement mlr models
-#'   \item factor features
-#'   \item add uniform grid option is useful (what happens to empty intervals?)
-#'   \item minbucket
-#'   \item pass specific interval boundaries (z)
-#'   \item second-order effects
-#' }
-#'
 #' @template arg_model
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
@@ -21,8 +10,7 @@
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
 #' @template arg_predict.fun
 #' @param multiclass [\code{logical(1)}]\cr
-#'   If multiclassification task (TODO: try to infer this automatically).
-#' @param minbucket Not yet implemented.
+#'   If multiclassification task
 #' @param ... ignored
 #'
 #' @return [\code{ALE}]
@@ -49,7 +37,7 @@
 computeALE = function(model, data, feature,
                       grid.size = "default",
                       predict.fun = predict,
-                      multiclass = FALSE, minbucket = 1, ...) {
+                      multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
   assert_function(predict.fun, args = c("object"))
 

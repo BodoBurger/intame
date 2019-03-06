@@ -3,12 +3,6 @@
 #' Creates univariate plots of a feature's values against model predictions and a smooth curve
 #' using loess regression.
 #'
-#' @section TODO:
-#' \itemize{
-#'   \item support multiple features at once
-#'   \item support multiclass (see lpd_motivation for an example)
-#' }
-#'
 #' @param model Model object. Object created by some fitting algorithm.
 #' @param ... Passed on to S3 methods
 #'
