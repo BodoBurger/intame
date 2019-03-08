@@ -1,0 +1,80 @@
+---
+title: Intame Losses
+author: 
+  - name: Bodo Burger
+    #affiliation: LMU Munich
+    #address: >
+    #  First line
+    #  Second line
+    #email: \email{bb@example.com}
+    #url: http://example.com
+  #- name: Second Author
+    #affiliation: Affiliation
+date: 2019-03-08
+output:
+  html_document: 
+    toc: yes
+  github_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+urlcolor: blue
+#bibliography: "literature.bib"
+#link-citations: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
+                      cache = FALSE, cache.path = "cache/intame_metrics")
+library("ggplot2")
+library("SimilarityMeasures")
+theme_set(theme_light())
+set.seed(4218)
+```
+
+## Overview
+
+Metric Name    | Inputs         | Range of values | Default theshold | Optimum
+-------------- | -------------- | --------------- | ---------------- | --------
+WM(S)R2        | $f$, residuals | $(0, 1)$        | $0.95$           |  max
+L2             | residuals      | $(0, +\infty($  | *?*              |  min
+Frechet        | $f, \hat{f}$   | $(0, +\infty($  | *?*              |  min           
+
+## Formulae
+
+- **WMR2**
+    - **part**: $1 - \frac{\sum \text{residual}_i^2}{\sum f - \overline{f}}$
+    - **aggregate**: $\frac{\sum n_k part_k}{\sum n_k}$ (mean weighted by number of points per interval)
+- **WMSR2**: same as *WMR2, but single parts are squared
+- **L2**: 
+
+
+$\text{residual}_i = f(x_i) - \hat{f}(x_i)$
+
+## Frechet Distance
+
+```{r,collapse=TRUE}
+x = c(0, 1, 2, 3)
+y1 = c(3, 2, 1, 2)
+y2 = c(6, 5, 6, 7)
+y3 = c(7, 6, 6, 7)
+y4 = c(2, 2, 2)
+
+path1 = matrix(c(x, y1-mean(y1)), 4)
+path2 = matrix(c(x, y2-mean(y2)+.5), 4)
+path3 = matrix(c(x, y3-mean(y3)), 4)
+path4 = matrix(c(0, 0, 2, y4-mean(y4)), 6)
+
+plot(path1[,1], path1[,2], type = "l", col = "blue", ylim = c(-3, 3))
+lines(path2[,1], path2[,2]+.03, col = "green")
+lines(path3[,1], path3[,2], col = "red")
+lines(path4[,1], path4[,2], col = "orange")
+
+Frechet(path1, path2)
+Frechet(path1, path3)
+Frechet(path1, path4)
+Frechet(path2, path3)
+Frechet(path2, path4)
+Frechet(path3, path4)
+```
+

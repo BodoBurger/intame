@@ -2,6 +2,7 @@
 #' @importFrom ggplot2 ggplot geom_point geom_line geom_vline geom_label aes aes_string facet_wrap xlab ylab ggtitle
 #' @importFrom stats .lm.fit predict quantile setNames weighted.mean
 #' @importFrom utils combn
+#' @importFrom SimilarityMeasures Frechet
 .onLoad = function(libname, pkgname) {
   # CRAN Note avoidance
   if(getRversion() >= "2.15.1")

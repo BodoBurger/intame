@@ -17,6 +17,7 @@ Imports:
     numDeriv,
     reshape2,
     rpart,
+    SimilarityMeasures,
     stats,
     utils
 Suggests:

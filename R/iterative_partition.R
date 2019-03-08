@@ -8,7 +8,8 @@
 #' @param metric_name [\code{character(1)}]
 #'   Implemented metrics: "WMSR2" (weighted mean squared R squared),
 #'                        "WMR2" (weighted mean R squared),
-#'                        "WMRSS" (weighted mean of residual sum of squares)
+#'                        "L2" (weighted mean of su)
+#'                        "L1"
 #' @param threshold [\code{numeric(1)}] Stopping criterium.
 #' @param max_splits [\code{integer(1)}] Stopping criterium.
 #' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
@@ -32,7 +33,10 @@ iterative_partition = function(x, f, metric_name = "WMSR2",
   x = x[x_order]
   f = f[x_order]
   mod_0 = .lm.fit(cbind(1, x), f)
-  opt_metric = extract_metric_part_from_lm(mod_0, f, metric_name)
+  opt_metric = extract_metric_part_from_lm(mod_0$residuals, f, x, metric_name)
+  if (metric_name == "Frechet") {
+    opt_metric = aggregate_metric_parts(list(opt_metric), NULL, "Frechet")
+  }
   opt_models = list(mod_0)
   opt_split = integer(0)
   metrics_history = opt_metric
@@ -57,7 +61,7 @@ iterative_partition = function(x, f, metric_name = "WMSR2",
       #f_tmp = vector("list", n_segments)
       mod_tmp = vector("list", n_segments)
       weights_tmp = numeric(n_segments)
-      metric_parts_tmp = numeric(n_segments)
+      metric_parts_tmp = vector("list", n_segments)
 
       for (k in 1:n_combinations) {
         split_tmp = split_combinations[, k]
@@ -67,11 +71,12 @@ iterative_partition = function(x, f, metric_name = "WMSR2",
           x_tmp = x[indices]
           f_tmp = f[indices]
           mod_tmp[[i]] = .lm.fit(cbind(1, x_tmp), f_tmp)
+          residuals_tmp = mod_tmp[[i]]$residuals
           weights_tmp[i] = length(x_tmp)
-          metric_parts_tmp[i] = extract_metric_part_from_lm(mod_tmp[[i]], f_tmp,
-            metric_name)
+          metric_parts_tmp[[i]] = extract_metric_part_from_lm(residuals_tmp, f_tmp,
+            x_tmp, metric_name)
         }
-        metric_tmp = weighted.mean(metric_parts_tmp, weights_tmp)
+        metric_tmp = aggregate_metric_parts(metric_parts_tmp, weights_tmp, metric_name)
         if (compare_metric_values(metric_tmp, opt_metric, metric_name)) {
           opt_metric = metric_tmp
           opt_split = split_tmp
