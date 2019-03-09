@@ -106,6 +106,7 @@ computeALE = function(model, data, feature,
                         fe_x = ale.x, fe_f = ale, # predicted derivatives
                         grid.size = grid.size, i = interval.indices,
                         ale.plot.data = ale.plot.data,
+                        x_org = x,
                         multiclass = multiclass, feature = feature),
                    class = c("ALE", "intame"),
                    comment = "Accumulated Local Effect"))
@@ -122,13 +123,14 @@ print.ALE = function(x, ...) {
 #'
 #' @param x object created by \code{\link{computeALE}}
 #' @param title Plot title.
+#' @param rugs [\code{logical(1)}]
 #' @param derivative If TRUE, plot ALEs, otherwise plot predictions at
 #'        interval limits.
 #' @param ... ignored
 #'
 #' @return \code{ggplot2} plot object
 #' @export
-plot.ALE = function(x, title = "ALE Plot", derivative = FALSE, ...) {
+plot.ALE = function(x, title = "ALE Plot", rugs = TRUE, derivative = FALSE, ...) {
   ALE = x
   if (ALE$multiclass) {
     ggplot(data = ALE$ale.plot.data,
@@ -141,9 +143,11 @@ plot.ALE = function(x, title = "ALE Plot", derivative = FALSE, ...) {
         geom_line() + geom_point() +
         xlab(ALE$feature) + ggtitle("ALE Plot (derivative)")
     } else {
-      ggplot(data = ALE$ale.plot.data, aes(x = fp_x, y = fp_f)) +
-        geom_line() + geom_point() +
-        xlab(ALE$feature) + ggtitle(title)
+      p = ggplot(data = ALE$ale.plot.data, aes(x = fp_x, y = fp_f)) +
+        geom_line() + geom_point()
+      if (rugs) p = p + geom_rug(data = data.frame(x = ALE$x_org), aes(x = x),
+        alpha = .2, sides = "b", inherit.aes = FALSE)
+      p + xlab(ALE$feature) + ggtitle(title)
     }
   }
 }

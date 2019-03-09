@@ -152,10 +152,16 @@ summary.Intame = function(object, ...) {
 #'
 #' @param x [\code{intame}]
 #' @param title [\code{character(1)}] Plot title
+#' @param show_slopes [\code{logical(1)}]
+#' @param rugs [\code{logical(1)}]
 #' @param ... ignored
 #'
 #' @export
-plot.Intame = function(x, title = "default", ...) {
+plot.Intame = function(x, title = "default",
+                       show_slopes = TRUE, rugs = TRUE, ...) {
+  assert_character(title, len = 1)
+  assert_logical(show_slopes, len = 1)
+  assert_logical(rugs, len = 1)
   if (title == "default") {
     title = paste0("Intame using ", x$fe_method)
   }
@@ -174,5 +180,10 @@ plot.Intame = function(x, title = "default", ...) {
     p = p + geom_vline(xintercept = bounds, linetype = 3, size = .6,
       col = "darkgray", alpha = 1)
   }
-  p + xlab(x$feature) + ylab(x$fe_method) + ggtitle(title)
+  if (show_slopes) p = p + geom_label(mapping = aes(x = x.0, y = y.0), label = format(AME, digits = 4),
+    size = 2.5)
+  if (rugs) p = p + geom_rug(aes(x = x$x), alpha = .1, sides = "b")
+  p + xlab(x$feature) + ylab(x$fe_method) + ggtitle(title) +
+    scale_x_continuous(breaks = bounds, minor_breaks = NULL,
+      labels = format(bounds, digits = 3, width = 3))
 }

@@ -143,6 +143,7 @@ computePD = function(model, data, feature,
   return(structure(list(fp_x = x.grid, fp_f = y.hat,
                         fe_x = fe_x, fe_f = fe_f,
                         plot.data = plot.data,
+                        x_org = x,
                         grid.size = grid.size, l = l,
                         multiclass = multiclass, feature = feature),
                    class = c("PD", "intame"),
@@ -160,11 +161,12 @@ print.PD = function(x, ...) {
 #'
 #' @param x PD object created by \code{\link{computePD}}
 #' @param title [\code{character}] Plot title.
+#' @param rugs [\code{logical(1)}]
 #' @param ... ignored
 #'
 #' @return \code{ggplot2} plot object
 #' @export
-plot.PD = function(x, title = "PD Plot", ...) {
+plot.PD = function(x, title = "PD Plot", rugs = TRUE, ...) {
   PD = x
   if (PD$multiclass) {
     ggplot(data = PD$plot.data,
@@ -172,9 +174,11 @@ plot.PD = function(x, title = "PD Plot", ...) {
       geom_line() + geom_point() +
       xlab(PD$feature) + ggtitle(title)
   } else {
-    ggplot(data = PD$plot.data, mapping = aes(x, y.hat)) +
-      geom_line() + geom_point() +
-      xlab(PD$feature) + ggtitle(title)
+     p = ggplot(data = PD$plot.data, mapping = aes(x, y.hat)) +
+      geom_line() + geom_point()
+     if (rugs) p = p + geom_rug(data = data.frame(x = PD$x_org), aes(x = x),
+       alpha = .2, sides = "b", inherit.aes = FALSE)
+     p + xlab(PD$feature) + ggtitle(title)
   }
 }
 

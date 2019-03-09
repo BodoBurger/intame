@@ -148,7 +148,7 @@ print.IntamePartition = function(x, ...) {
 #'
 #' @param x object of class "IntamePartition
 #' @param title [\code{character(1)}] Plot title.
-#' @param plot_org_points Show points that were devided into partitions.
+#' @param rugs [\code{logical(1)}]
 #' @param return_data Return data.frame to create individual plots
 #' @param ... ignored
 #'
@@ -156,8 +156,8 @@ print.IntamePartition = function(x, ...) {
 #'
 #' @export
 plot.IntamePartition = function(x, title = "default",
-                                plot_org_points = TRUE,
                                 #show_split_numbers = TRUE,
+                                rugs = TRUE,
                                 return_data = FALSE,
                                 ...) {
   assert_class(x, classes = "IntamePartition")
@@ -165,9 +165,9 @@ plot.IntamePartition = function(x, title = "default",
   if (title == "default") {
     title = paste0("Partition using ", x$metric_name, ", greedy=", x$greedy)
   }
-  assert_logical(plot_org_points, len = 1)
   #assert_logical(show_split_numbers, len = 1)
   assert_logical(return_data, len = 1)
+  splits_values = x$x_org[x$splits]
   gg_data = splits_plot_points(x)
   if (return_data) {
     return(gg_data)
@@ -175,19 +175,18 @@ plot.IntamePartition = function(x, title = "default",
   p = ggplot() +
     geom_line(data = gg_data, aes(x = x, y = y, group = id), color = "blue")
   if (x$n_splits > 0) {
-    p = p + geom_vline(xintercept = x$x_org[x$splits], linetype = 3, size = .6,
+    p = p + geom_vline(xintercept = splits_values, linetype = 3, size = .6,
       col = "darkgray", alpha = 1)
     # if (show_split_numbers) {
-    #   p = p + geom_label(mapping=aes(x=x$x_org[x$splits], y=max(gg_data$y),
+    #   p = p + geom_label(mapping=aes(x=splits_values, y=max(gg_data$y),
     #     label=(1:x$n_splits)), size=2, alpha = .8)
     # }
   }
-  if (plot_org_points) {
-    org_data = data.frame(x = x$x_org, y = x$f_org)
-    p = p + geom_line(data = org_data, aes(x = x, y = y), alpha = .3) #+
-      #geom_point(data = org_data, aes(x = x, y = y), alpha = .4)
-  }
-  p + ggtitle(title)
+  if (rugs) p = p + geom_rug(aes(x = x$x_org), alpha = .3, sides = "b")
+  p + geom_line(aes(x = x$x_org, y = x$f_org), alpha = .3) +
+    ggtitle(title) +
+    scale_x_continuous(breaks = splits_values, minor_breaks = NULL,
+      labels = format(splits_values, digits = 3))
 }
 
 splits_plot_points = function(obj) {

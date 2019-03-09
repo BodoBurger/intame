@@ -88,6 +88,9 @@ nnet.ale2 = computeALE(nnet.mod$learner.model, df, "x2", grid.size)
 plot(nnet.ale2)
 px2 = nnet.ale2$fp_x
 pf2 = nnet.ale2$fp_f
+
+nnet.pd2 = computePD(nnet.mod$learner.model, df, "x2", grid.size)
+plot(nnet.pd2)
 ```
 
 ## Partition AL predictions
@@ -97,7 +100,7 @@ saf_x1 = iterative_partition(px1, pf1, threshold = .95)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = iterative_partition(px2, pf2, "WMR2", threshold = .95, max_splits = 10,
+saf_x2 = iterative_partition(px2, pf2, "WMSR2", threshold = .9, max_splits = 10,
   greedy = TRUE)
 plot(saf_x2)
 saf_x2
