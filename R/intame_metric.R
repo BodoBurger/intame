@@ -1,19 +1,45 @@
 #' constant
-ImplementedMetrics = c("WMSR2", "WMR2", "L2", "L1", "Frechet")
+ImplementedMetrics = c("R2int", "L2", "L1", "Frechet")
 # TODOS New Metrics:
 # - RSS(i) / RSS(i-1)
 
 
 #' Find sensible threshold depending on the metric and data
 #'
-#' @param x [\code{numeric}]
-#' @param f [\code{numeric}]
-#' @param metric_name [\code{character(1)}] Metric name
+#' @template arg_model
+#' @template arg_data
+#' @param features [\code{character}]
+#'   The names of all features that should be considered when looking for a threshold.
+#' @template arg_metric_name
+#' @param fe_method [\code{character(1)}]
+#' @param fe [\code{list}] List containing a feature effect object for each feature.
+#'   Can be provided if it was already computed.
+#' @param ... Passed to feature effect method (ALE or PD).
 #'
 #' @return [\code{numeric(1)}]
 #' @export
-calculate_threshold = function(x, f, metric_name) {
+suggest_threshold = function(model, data, features, metric_name, fe_method = "ALE", fe = NULL, ...) {
+  assert(all(features %in% colnames(data)))
+  assert_choice(metric_name, choices = ImplementedMetrics)
+  assert_choice(fe_method, choices = c("ALE", "PD"))
+  if(!is.null(fe)) assert_class(fe, "IntameFeatureEffect")
 
+  if (metric_name == "R2int")
+    threshold = .95
+  else if (metric_name %in% c("L2", "L1")) {
+    if (is.null(fe)) {
+      fe = vector(mode = "list")
+      deviations = numeric(length(features))
+      for (i in seq_along(features)) {
+        fe[[features[i]]] = computeFeatureEffect(fe_method, model, data, features[i], ...)
+        deviations[i] = sd(fe[[features[i]]]$fp_f)
+      }
+    }
+    SD_FRACTION = .2
+    threshold = SD_FRACTION * max(deviations)
+  }
+  list(threshold = threshold,
+       fe = fe)
 }
 
 #' Get metric part from a linear model
@@ -21,24 +47,22 @@ calculate_threshold = function(x, f, metric_name) {
 #' @param residuals [\code{numeric}]
 #' @param f [\code{numeric}]
 #' @param x [\code{numeric}]
-#' @param metric_name [\code{character(1)}] Metric name
+#' @template arg_metric_name
 #'
 #' @return [\code{numeric(1)}]
 #' @export
 #'
 #' @examples
 #' residuals = lm.fit(x = cbind(1, mtcars$disp), y = mtcars$mpg)$residuals
-#' extract_metric_part_from_lm(residuals, mtcars$disp, mtcars$mpg, "WMSR2")
+#' extract_metric_part_from_lm(residuals, mtcars$disp, mtcars$mpg, "R2int")
 #' extract_metric_part_from_lm(residuals, mtcars$disp, mtcars$mpg, "L2")
 extract_metric_part_from_lm = function(residuals, f, x, metric_name) {
   if (metric_name == "L2") {
     mean.default(residuals^2)
   } else if (metric_name == "L1") {
     mean.default(abs(residuals))
-  } else if (metric_name == "WMR2") {
+  } else if (metric_name == "R2int") {
     1 - sum(residuals^2) / sum((f-mean.default(f))^2)
-  } else if (metric_name == "WMSR2") {
-    (1 - sum(residuals^2) / sum((f-mean.default(f))^2))^2
   } else if (metric_name == "Frechet") {
     f_hat = f - residuals
     matrix(c(x, f, f_hat), ncol = 3)
@@ -51,7 +75,7 @@ extract_metric_part_from_lm = function(residuals, f, x, metric_name) {
 #'
 #' @param parts Output of extract_metric_part_from_lm()
 #' @param weights Number of points in interval
-#' @param metric_name [\code{character(1)}] Metric name
+#' @template arg_metric_name
 #'
 #' @return [\code{numeric(1)}]
 #' @export
@@ -69,7 +93,7 @@ aggregate_metric_parts = function(parts, weights, metric_name) {
 #'
 #' @param metric [\code{numeric(1)}]
 #' @param other_metric [\code{numeric(1)}]
-#' @param metric_name [\code{character(1)}] Metric name
+#' @template arg_metric_name
 #'
 #' @return [\code{logical(1)}]
 #' @export

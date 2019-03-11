@@ -108,7 +108,7 @@ computeALE = function(model, data, feature,
                         ale.plot.data = ale.plot.data,
                         x_org = x,
                         multiclass = multiclass, feature = feature),
-                   class = c("ALE", "intame"),
+                   class = c("ALE", "IntameFeatureEffect"),
                    comment = "Accumulated Local Effect"))
 }
 

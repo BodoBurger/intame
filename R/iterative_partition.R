@@ -5,11 +5,7 @@
 #'
 #' @param x [\code{numeric}]
 #' @param f [\code{numeric}]
-#' @param metric_name [\code{character(1)}]
-#'   Implemented metrics: "WMSR2" (weighted mean squared R squared),
-#'                        "WMR2" (weighted mean R squared),
-#'                        "L2" (weighted mean of su)
-#'                        "L1"
+#' @template arg_metric_name
 #' @param threshold [\code{numeric(1)}] Stopping criterium.
 #' @param max_splits [\code{integer(1)}] Stopping criterium.
 #' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
@@ -19,8 +15,8 @@
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-iterative_partition = function(x, f, metric_name = "WMSR2",
-                               threshold = .9, max_splits = 10,
+iterative_partition = function(x, f, metric_name = "R2int",
+                               threshold = .95, max_splits = 10L,
                                greedy = FALSE, verbose = TRUE, ...) {
   assert_numeric(x)
   assert_numeric(f)

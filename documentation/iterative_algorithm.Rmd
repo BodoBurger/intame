@@ -100,7 +100,7 @@ saf_x1 = iterative_partition(px1, pf1, threshold = .95)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = iterative_partition(px2, pf2, "WMSR2", threshold = .9, max_splits = 10,
+saf_x2 = iterative_partition(px2, pf2, "R2int", threshold = .9, max_splits = 10,
   greedy = TRUE)
 plot(saf_x2)
 saf_x2
@@ -124,7 +124,7 @@ saf_x2.L1 = iterative_partition(px2, pf2, "L1", threshold = th, max_splits = 10,
 plot(saf_x2.L1)
 saf_x2.L1
 
-saf_x2_non_greedy = iterative_partition(px2, pf2, "WMR2", threshold = .95, max_splits = 10,
+saf_x2_non_greedy = iterative_partition(px2, pf2, "R2int", threshold = .95, max_splits = 10,
   greedy = FALSE)
 plot(saf_x2_non_greedy)
 saf_x2_non_greedy
@@ -198,8 +198,8 @@ ggplot() +
 th = sd(df$y) / 5 # threshold for L2
 th = max(sd(ale.x1$fp_f), sd(ale.x2$fp_f)) / 5
 
-saf_flat = iterative_partition(ale.x1$fp_x, ale.x1$fp_f, "WMR2")
-saf_steep = iterative_partition(ale.x2$fp_x, ale.x2$fp_f, "WMR2")
+saf_flat = iterative_partition(ale.x1$fp_x, ale.x1$fp_f, "R2int")
+saf_steep = iterative_partition(ale.x2$fp_x, ale.x2$fp_f, "R2int")
 plot(saf_flat) + ylim(-5, 5) +
 plot(saf_steep)
 saf_flat.L2 = iterative_partition(ale.x1$fp_x, ale.x1$fp_f, "L2", th)
@@ -243,8 +243,8 @@ ggplot() +
 th_bc = sd(df_bc$y_bc) / 5 # threshold for L2
 th_bc = max(sd(ale_x1_bc$fp_f), sd(ale_x2_bc$fp_f)) / 5
 
-saf_flat_bc = iterative_partition(ale_x1_bc$fp_x, ale_x1_bc$fp_f, "WMR2", .95)
-saf_steep_bc = iterative_partition(ale_x2_bc$fp_x, ale_x2_bc$fp_f, "WMR2", .95)
+saf_flat_bc = iterative_partition(ale_x1_bc$fp_x, ale_x1_bc$fp_f, "R2int", .95)
+saf_steep_bc = iterative_partition(ale_x2_bc$fp_x, ale_x2_bc$fp_f, "R2int", .95)
 plot(saf_flat_bc) + ylim(-7, 9) +
 plot(saf_steep_bc)
 saf_flat_L2_bc = iterative_partition(ale_x1_bc$fp_x, ale_x1_bc$fp_f, "L2", th_bc)
@@ -283,7 +283,7 @@ saf_x1 = iterative_partition(gbm.ale1$fp_x, gbm.ale1$fp_f, threshold = .9)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = iterative_partition(px2, pf2, method = "WMSR2", threshold = .9, max_splits = 20)
+saf_x2 = iterative_partition(px2, pf2, method = "R2int", threshold = .9, max_splits = 20)
 plot(saf_x2)
 saf_x2
 ```
@@ -292,19 +292,19 @@ saf_x2
 
 ```{r profiling, benchmarks}
 library(profvis)
-profvis(iterative_partition(x1, y_flat(x1), "WMR2"))
+profvis(iterative_partition(x1, y_flat(x1), "R2int"))
 profvis(iterative_partition(x1, y_flat(x1), "L2",threshold = .1, max_splits = 3, greedy = FALSE))
 
-profvis(iterative_partition(px2, pf2, "WMSR2", threshold = .95, max_splits = 20,
+profvis(iterative_partition(px2, pf2, "R2int", threshold = .95, max_splits = 20,
   greedy = FALSE))
 
 library(microbenchmark)
 microbenchmark(
-  iterative_partition(x1, y_flat(x1), "WMR2", max_splits = 2),
-  iterative_partition(x1, y_flat(x1), "WMR2", max_splits = 2, greedy = FALSE),
+  iterative_partition(x1, y_flat(x1), "R2int", max_splits = 2),
+  iterative_partition(x1, y_flat(x1), "R2int", max_splits = 2, greedy = FALSE),
   times = 5)
 
-saf_steep = iterative_partition(x1, y_steep(x1), "WMR2")
+saf_steep = iterative_partition(x1, y_steep(x1), "R2int")
 saf_flat.L2 = iterative_partition(x1, y_flat(x1), "L2", .1)
 saf_steep.L2 = iterative_partition(x1, y_steep(x1), "L2", .1)
 ```

@@ -6,19 +6,22 @@
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
-#' @param intervals [\code{integer(1)}]\cr
-#'   Number of intervals.
 #' @template arg_predict.fun
+#' @template arg_metric_name
+#' @param threshold [\code{numeric(1)}] Stopping criterium.
+#' @param max_splits [\code{integer(1)}]\cr
+#'   Number of intervals.
 #' @param fe_method [\code{character(1)}]\cr
 #'   Method for calculating fine-granulated marginal effects.
 #'   Based on these values, the algorithm determines intervals of similar
 #'   marginal effects.\cr
 #'   "ALE": Accumulated Local Effect\cr
-#'   "PDeriv": Partial Derivative
+#'   "PD": Partial Derivative
 #' @param fe_grid_size [\code{integer(1)}]\cr
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
 #' @param x_splits [\code{numeric}]\cr
-#'   Define interval limits manually. Overwrites \code{intervals} if provided.
+#'   Define interval limits manually. If given, search for optimal split points
+#'   skipped.
 #' @param use_AME [\code{logical(1)}]
 #'   Calculate "classic" Average Marginal Effects for each interval (not recommended).
 #' @param use_iterative_algorithm (recommended)
@@ -50,18 +53,18 @@
 #' AME.x1 = intame(nnet.mod, df, "x1")
 #' AME.x1
 #' plot(AME.x1)
-#' AME.x2 = intame(nnet.mod, df, "x2", fe_grid_size = 20, greedy = TRUE)
+#' AME.x2 = intame(nnet.mod, df, "x2", threshold = .9, fe_grid_size = 25, greedy = TRUE)
 #' AME.x2
 #' plot(AME.x2)
 intame = function(model, data, feature,
-                  intervals = 5L,
                   predict.fun = function(object, newdata) predict(object, newdata),
+                  metric_name = "R2int", threshold = "default", max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
                   use_AME = FALSE, use_iterative_algorithm = TRUE,
                   ...) {
   assert_choice(feature, colnames(data))
-  assert_integerish(intervals, lower = 2, any.missing = FALSE, max.len = 1)
+  assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
   assert_choice(fe_method, c("ALE", "PDeriv"))
 
   if (fe_method == "ALE") {
@@ -77,31 +80,39 @@ intame = function(model, data, feature,
   fe_f = FE$fe_f
   if (is.null(x_splits)) {
     if (use_iterative_algorithm) {
-      intame_partition = iterative_partition(fp_x, fp_f, ...)
+      if (threshold == "default") {
+        threshold = suggest_threshold(model, data, feature, metric_name,
+          fe_method, fe = FE)$threshold
+      }
+      intame_partition = iterative_partition(fp_x, fp_f, metric_name, threshold, max_splits, ...)
       x_splits = fp_x[intame_partition$splits]
     } else {
       intame_partition = NULL
-      x_splits = partition(fe_x, fe_f, intervals)
+      x_splits = partition(fe_x, fe_f, max_splits)
     }
+  } else {
+    intame_partition = NULL
   }
 
   x = data[, feature]
   bounds = c(min(x), sort(x_splits), max(x))
-  #if (length(bounds)-1 < intervals) message("Found less than ", intervals, " intervals.")
-  intervals = length(bounds) - 1
-  AME = numeric(intervals) # slope
-  y.hat.mean = numeric(intervals) # ordinate
-  x.interval.average = numeric(intervals) # abscissa
+  #if (length(bounds)-1 < n_intervals) message("Found less than ", n_intervals, " n_intervals.")
+  n_intervals = length(bounds) - 1
+  AME = numeric(n_intervals) # slope
+  y.hat.mean = numeric(n_intervals) # ordinate
+  x.interval.average = numeric(n_intervals) # abscissa
+  if (is.null(intame_partition)) use_AME = TRUE
   if (!use_AME) {
-    for (i in 1:intervals) {
+    for (i in 1:n_intervals) {
       coefficients_interval = intame_partition$models[[i]]$coefficients
       AME[i] = coefficients_interval[2]
       x.interval.average[i] = (bounds[i] + bounds[i+1])/2
       y.hat.mean[i] = x.interval.average[i] * AME[i] + coefficients_interval[1]
     }
   } else {
-    bounds[intervals+1] = bounds[intervals+1] + 0.000001
-    for (i in 1:intervals) {
+    y.hat = predict.fun(model, data)
+    bounds[n_intervals+1] = bounds[n_intervals+1] + 0.000001
+    for (i in 1:n_intervals) {
       selection = x >= bounds[i] & x < bounds[i+1]
       data.interval = data[selection,]
       AME[i] = ame::computeAME(model, data.interval, feature,
@@ -112,10 +123,10 @@ intame = function(model, data, feature,
   }
 
   bounds.rounded = round(bounds, digits = 3)
-  interval.desc = character(intervals)
-  interval.desc[intervals] = paste0("[", bounds.rounded[intervals], ", ",
-    bounds.rounded[intervals+1], "]")
-  for (i in 1:(intervals-1)) {
+  interval.desc = character(n_intervals)
+  interval.desc[n_intervals] = paste0("[", bounds.rounded[n_intervals], ", ",
+    bounds.rounded[n_intervals+1], "]")
+  for (i in 1:(n_intervals-1)) {
     interval.desc[i] = paste0("[", bounds.rounded[i], ", ", bounds.rounded[i+1], ")")
   }
   return(structure(list(AME = setNames(AME, interval.desc),
@@ -176,12 +187,12 @@ plot.Intame = function(x, title = "default",
       (x.0[i] - bounds[i]) * AME[i], y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])),
       col = "blue", inherit.aes = FALSE)
   }
-  if (x$intame_partition$n_splits > 0) {
+  if (length(x$x_splits) > 0) {
     p = p + geom_vline(xintercept = bounds, linetype = 3, size = .6,
       col = "darkgray", alpha = 1)
   }
-  if (show_slopes) p = p + geom_label(mapping = aes(x = x.0, y = y.0), label = format(AME, digits = 4),
-    size = 2.5)
+  if (show_slopes) p = p + geom_label(mapping = aes(x = x.0, y = y.0),
+    label = format(AME, digits = 4), size = 2.5, alpha = .5)
   if (rugs) p = p + geom_rug(aes(x = x$x), alpha = .1, sides = "b")
   p + xlab(x$feature) + ylab(x$fe_method) + ggtitle(title) +
     scale_x_continuous(breaks = bounds, minor_breaks = NULL,

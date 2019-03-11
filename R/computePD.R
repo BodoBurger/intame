@@ -146,7 +146,7 @@ computePD = function(model, data, feature,
                         x_org = x,
                         grid.size = grid.size, l = l,
                         multiclass = multiclass, feature = feature),
-                   class = c("PD", "intame"),
+                   class = c("PD", "IntameFeatureEffect"),
                    comment = "Partial Dependence"))
 }
 
