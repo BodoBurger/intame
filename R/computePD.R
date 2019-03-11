@@ -58,7 +58,7 @@ computePD = function(model, data, feature,
   assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
-    grid.size = nrow(data)/5
+    grid.size = round(nrow(data)/5)
     if (grid.size > 40) grid.size = 40
   } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
@@ -152,8 +152,8 @@ computePD = function(model, data, feature,
 
 #' @export
 print.PD = function(x, ...) {
-  values = x$y.hat
-  names(values) = round(x$x.grid, digits = 5)
+  values = x$fp_f
+  names(values) = round(x$fp_x, digits = 5)
   print(values)
 }
 

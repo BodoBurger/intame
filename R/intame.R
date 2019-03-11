@@ -54,7 +54,7 @@
 #' AME.x2
 #' plot(AME.x2)
 intame = function(model, data, feature,
-                  intervals = 5,
+                  intervals = 5L,
                   predict.fun = function(object, newdata) predict(object, newdata),
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,

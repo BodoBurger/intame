@@ -42,7 +42,7 @@ computeALE = function(model, data, feature,
   assert_function(predict.fun, args = c("object"))
 
   if (grid.size == "default") {
-    grid.size = nrow(data)/5
+    grid.size = round(nrow(data)/5)
     if (grid.size > 40) grid.size = 40
   } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
 
