@@ -81,10 +81,10 @@ For feature 2, AME is less meaningful because of the non-monotonic effect.
 ### Feature 1
 
 ```{r feature-1}
-ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", grid.size = 30)
+ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", grid_size = 30)
 plot(ALE.x1, derivative = FALSE)
 mean(ALE.x1$fe_f)
-PD.x1 = computePD(nnet.mod$learner.model, df, "x1", grid.size = 30, grid.method = "quantile")
+PD.x1 = computePD(nnet.mod$learner.model, df, "x1", grid_size = 30, grid_method = "quantile")
 plot(PD.x1)
 mean(PD.x1$fe_f)
 ```
@@ -95,9 +95,9 @@ Does this indicate ALE is better at representing the marginal effect?
 ### Feature 2
 
 ```{r feature-2}
-ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", grid.size = 30)
+ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", grid_size = 30)
 plot(ALE.x2)
-PD.x2 = computePD(nnet.mod$learner.model, df, "x2", grid.size = 30, grid.method = "quantile")
+PD.x2 = computePD(nnet.mod$learner.model, df, "x2", grid_size = 30, grid_method = "quantile")
 plot(PD.x2)
 # analytical derivation of the additive part of feature 2:
 y2_partial = function(x) 4 * sin(4*pi*x) * 4*pi * x - 4 * cos(4*pi*x)
@@ -142,7 +142,7 @@ plot(ALE.x2) +
 
 ```{r}
 AME.x2 = intame(nnet.mod$learner.model, df, "x2", x_splits = breaks.ALE,
-  method = "PDeriv")
+  use_iterative_algorithm = FALSE)
 AME.x2
 plot(AME.x2)
 ```
@@ -306,7 +306,7 @@ plot(computeALE(lm.mod$learner.model, data = dt, "x2"))
 plot(computeALE(nnet.mod$learner.model, data = dt, "x2"))
 plot(computeALE(svm.mod$learner.model, data = dt, "x2"))
 plot(computeALE(gbm.mod$learner.model, data = dt, "x2",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
 ```
 
 ```{r}
@@ -314,7 +314,7 @@ plot(computePD(lm.mod$learner.model, data = dt, "x2"))
 plot(computePD(nnet.mod$learner.model, data = dt, "x2"))
 plot(computePD(svm.mod$learner.model, data = dt, "x2"))
 plot(computePD(gbm.mod$learner.model, data = dt, "x2",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
 ```
 
 
@@ -323,7 +323,7 @@ intame(lm.mod$learner.model, data = dt, "x2")
 intame(nnet.mod$learner.model, data = dt, "x2")
 intame(svm.mod$learner.model, data = dt[train.ind,], "x2")
 intame(gbm.mod$learner.model, data = dt[train.ind,], "x2",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
 ```
 
 #### Feature x5
@@ -333,7 +333,7 @@ plot(computeALE(lm.mod$learner.model, data = dt, "x5"))
 plot(computeALE(nnet.mod$learner.model, data = dt, "x5"))
 plot(computeALE(svm.mod$learner.model, data = dt, "x5"))
 plot(computeALE(gbm.mod$learner.model, data = dt, "x5",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
 ```
 
 ```{r}
@@ -341,7 +341,7 @@ plot(computePD(lm.mod$learner.model, data = dt, "x5"))
 plot(computePD(nnet.mod$learner.model, data = dt, "x5"))
 plot(computePD(svm.mod$learner.model, data = dt, "x5"))
 plot(computePD(gbm.mod$learner.model, data = dt, "x5",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
 ```
 
 
@@ -350,6 +350,6 @@ intame(lm.mod$learner.model, data = dt, "x5")
 intame(nnet.mod$learner.model, data = dt, "x5")
 intame(svm.mod$learner.model, data = dt[train.ind,], "x5")
 AME.x5.gbm = intame(gbm.mod$learner.model, data = dt[train.ind,], "x5",
-  predict.fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
 plot(AME.x5.gbm)
 ```

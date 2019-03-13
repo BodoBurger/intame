@@ -6,9 +6,9 @@
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
-#' @param grid.size [\code{integer(1)}]\cr
+#' @param grid_size [\code{integer(1)}]\cr
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
-#' @template arg_predict.fun
+#' @template arg_predict_fun
 #' @param multiclass [\code{logical(1)}]\cr
 #'   If multiclassification task
 #' @param ... ignored
@@ -27,86 +27,86 @@
 #'   df = data.frame(y, x1, x2, x3)
 #'   nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
 #'     decay=0.01, maxit = 1000, trace = FALSE)
-#'   predict.fun = function(X.model, newdata)
+#'   predict_fun = function(X.model, newdata)
 #'     as.numeric(predict(object, newdata))
-#'   p1 = plot(computeALE(nnet.fit, df, feature="x1", grid.size=50))
-#'   p2 = plot(computeALE(nnet.fit, df, feature="x2", grid.size=50))
-#'   p3 = plot(computeALE(nnet.fit, df, feature="x3", grid.size=50))
+#'   p1 = plot(computeALE(nnet.fit, df, feature="x1", grid_size=50))
+#'   p2 = plot(computeALE(nnet.fit, df, feature="x2", grid_size=50))
+#'   p3 = plot(computeALE(nnet.fit, df, feature="x3", grid_size=50))
 #'   grid.arrange(p1, p2, p3, ncol=2)
 #' }
 computeALE = function(model, data, feature,
-                      grid.size = "default",
-                      predict.fun = predict,
+                      predict_fun = predict,
+                      grid_size = "default",
                       multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
-  assert_function(predict.fun, args = c("object"))
+  assert_function(predict_fun, args = c("object"))
 
-  if (grid.size == "default") {
-    grid.size = round(nrow(data)/5)
-    if (grid.size > 40) grid.size = 40
-  } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
+  if (grid_size == "default") {
+    grid_size = round(nrow(data)/5)
+    if (grid_size > 40) grid_size = 40
+  } else assert_integerish(grid_size, lower = 2, max.len = 1, any.missing = FALSE)
 
   assert_logical(multiclass)
 
   ##############################################################################
   x = data[, feature]
-  if (grid.size >= length(x)-1) {
-    warning("grid.size was set to length of feature.")
+  if (grid_size >= length(x)-1) {
+    warning("grid_size was set to length of feature.")
     z = sort(x)
   } else {
-    z = c(min(x), as.numeric(quantile(x, seq(1/grid.size, 1,
-      length.out = grid.size), type = 1)))
-      # c(min(), quantile()) necessary for grid.size = n
+    z = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
+      length.out = grid_size), type = 1)))
+      # c(min(), quantile()) necessary for grid_size = n
   }
-  z = unique(z) # if grid.size > nrow(data) or x has lots of non-unique values
-  grid.size = length(z) - 1
-  # if grid.size >= (n-1) the first two obs are assigned to the first interval
-  interval.indices = as.numeric(cut(x, breaks = z, include.lowest = TRUE))
-  w = as.numeric(table(interval.indices))
+  z = unique(z) # if grid_size > nrow(data) or x has lots of non-unique values
+  grid_size = length(z) - 1
+  # if grid_size >= (n-1) the first two obs are assigned to the first interval
+  interval_indices = as.numeric(cut(x, breaks = z, include.lowest = TRUE))
+  w = as.numeric(table(interval_indices))
 
-  data.l = data
-  data.u = data
-  data.l[, feature] = z[interval.indices]
-  data.u[, feature] = z[interval.indices + 1]
-  y.hat.l = predict.fun(model, newdata = data.l)
-  y.hat.u = predict.fun(model, newdata = data.u)
-  #delta = y.hat.u - y.hat.l
+  data_l = data
+  data_u = data
+  data_l[, feature] = z[interval_indices]
+  data_u[, feature] = z[interval_indices + 1]
+  y_hat_l = predict_fun(model, newdata = data_l)
+  y_hat_u = predict_fun(model, newdata = data_u)
+  #delta = y_hat_u - y_hat_l
 
   if (multiclass) { # multi-class
-    nclass = ncol(y.hat.l)
+    nclass = ncol(y_hat_l)
     for (i in 1:nclass) {
-      #delta[1:grid.size,i] = tapply(delta[,i], interval.indices, mean)
-      y.hat.l[1:grid.size, i] = tapply(y.hat.l[,i], interval.indices, mean)
-      y.hat.u[1:grid.size, i] = tapply(y.hat.u[,i], interval.indices, mean)
+      #delta[1:grid_size,i] = tapply(delta[,i], interval_indices, mean)
+      y_hat_l[1:grid_size, i] = tapply(y_hat_l[,i], interval_indices, mean)
+      y_hat_u[1:grid_size, i] = tapply(y_hat_u[,i], interval_indices, mean)
     }
-    y.hat.l = y.hat.l[1:grid.size,]
-    y.hat.u = y.hat.u[1:grid.size,]
-    delta = y.hat.u - y.hat.l
-    #delta = delta[1:grid.size, ]
-    #f = apply(rbind(y.hat.l[1, ], delta), 2, function(x) cumsum(x))
+    y_hat_l = y_hat_l[1:grid_size,]
+    y_hat_u = y_hat_u[1:grid_size,]
+    delta = y_hat_u - y_hat_l
+    #delta = delta[1:grid_size, ]
+    #f = apply(rbind(y_hat_l[1, ], delta), 2, function(x) cumsum(x))
     f = apply(delta, 2, function(x) c(0, cumsum(x)))
-    f = f + matrix(y.hat.l[1,], grid.size+1, nclass, byrow = TRUE)
-    #f = apply(f, 2, function(f) f - sum((f[1:grid.size] + f[2:(grid.size + 1)])/2 * w) / sum(w))
+    f = f + matrix(y_hat_l[1,], grid_size+1, nclass, byrow = TRUE)
+    #f = apply(f, 2, function(f) f - sum((f[1:grid_size] + f[2:(grid_size + 1)])/2 * w) / sum(w))
     ale = apply(delta, 2, function(x) x/diff(z))
-    ale.plot.data = reshape2::melt(data = data.frame(x = z, f), id.vars = "x",
+    plot_data = reshape2::melt(data = data.frame(x = z, f), id.vars = "x",
       variable.name = "class", value.name = "f")
-    #ale.plot.data = reshape2::melt(data = data.frame(x = z[-length(z)], y.hat.l),
+    #plot_data = reshape2::melt(data = data.frame(x = z[-length(z)], y_hat_l),
     #  id.vars = "x", variable.name = "class", value.name = "probability")
   } else {
-    delta = y.hat.u - y.hat.l
+    delta = y_hat_u - y_hat_l
     # probably better (numerically) to do tapply on y.hat, see multiclass
-    delta = as.numeric(tapply(delta, interval.indices, mean))
+    delta = as.numeric(tapply(delta, interval_indices, mean))
     f = c(0, cumsum(delta))
-    f = f - sum((f[1:grid.size] + f[2:(grid.size + 1)])/2 * w) / sum(w)
+    f = f - sum((f[1:grid_size] + f[2:(grid_size + 1)])/2 * w) / sum(w)
     ale = delta/diff(z)
-    ale.plot.data = data.frame(fp_x = z, fp_f = f)
+    plot_data = data.frame(fp_x = z, fp_f = f)
   }
   ale.x = (z[-length(z)] + z[-1]) / 2
   return(structure(list(fp_x = z, fp_f = f, # predicted values
                         fe_x = ale.x, fe_f = ale, # predicted derivatives
-                        grid.size = grid.size, i = interval.indices,
-                        ale.plot.data = ale.plot.data,
+                        plot_data = plot_data,
                         x_org = x,
+                        grid_size = grid_size, interval_indices = interval_indices,
                         multiclass = multiclass, feature = feature),
                    class = c("ALE", "IntameFeatureEffect"),
                    comment = "Accumulated Local Effect"))
@@ -133,7 +133,7 @@ print.ALE = function(x, ...) {
 plot.ALE = function(x, title = "ALE Plot", rugs = TRUE, derivative = FALSE, ...) {
   ALE = x
   if (ALE$multiclass) {
-    ggplot(data = ALE$ale.plot.data,
+    ggplot(data = ALE$plot_data,
       aes(x = x, y = f, group = class, col = class)) +
       geom_line() + geom_point() +
       xlab(ALE$feature) + ggtitle(title)
@@ -143,7 +143,7 @@ plot.ALE = function(x, title = "ALE Plot", rugs = TRUE, derivative = FALSE, ...)
         geom_line() + geom_point() +
         xlab(ALE$feature) + ggtitle("ALE Plot (derivative)")
     } else {
-      p = ggplot(data = ALE$ale.plot.data, aes(x = fp_x, y = fp_f)) +
+      p = ggplot(data = ALE$plot_data, aes(x = fp_x, y = fp_f)) +
         geom_line() + geom_point()
       if (rugs) p = p + geom_rug(data = data.frame(x = ALE$x_org), aes(x = x),
         alpha = .2, sides = "b", inherit.aes = FALSE)

@@ -59,16 +59,16 @@ spam.fit$coefficients[feat.select]
 ame::computeAME(spam.fit, spam.data, feat.select, predict.fun = spam.predict)
 
 intame.charDollar = intame(spam.fit, spam.data, "charDollar",
-  predict.fun = spam.predict, fe_method = "ALE")
+  predict_fun = spam.predict, fe_method = "ALE")
 summary(intame.charDollar)
 plot(intame.charDollar)
 
-plot(computeALE(spam.fit, spam.data, "charDollar", predict.fun = spam.predict))
-plot(computePD(spam.fit, spam.data, "charDollar", predict.fun = spam.predict))
-plot(computePD(spam.fit, spam.data, "hpl", grid.size = 30,
-  predict.fun = spam.predict))
-plot(computePD(spam.fit, spam.data, "people", grid.size = 30,
-  predict.fun = spam.predict))
+plot(computeALE(spam.fit, spam.data, "charDollar", predict_fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "charDollar", predict_fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "hpl", grid_size = 30,
+  predict_fun = spam.predict))
+plot(computePD(spam.fit, spam.data, "people", grid_size = 30,
+  predict_fun = spam.predict))
 ```
 
 ## `computePD()`
@@ -86,9 +86,9 @@ y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
 df = data.frame(y, x1, x2, x3)
 nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
   decay=0.01, maxit = 1000, trace = FALSE)
-p1 = plot(computePD(nnet.fit, df, feature="x1", grid.size=50))
-p2 = plot(computePD(nnet.fit, df, feature="x2", grid.size=50))
-p3 = plot(computePD(nnet.fit, df, feature="x3", grid.size=50))
+p1 = plot(computePD(nnet.fit, df, feature="x1", grid_size=50))
+p2 = plot(computePD(nnet.fit, df, feature="x2", grid_size=50))
+p3 = plot(computePD(nnet.fit, df, feature="x3", grid_size=50))
 grid.arrange(p1, p2, p3, ncol=2)
 ```
 
@@ -108,14 +108,14 @@ y = x1 + 2 * x2^2 + (x1-0.5) * (x3-0.5) + rnorm(n, 0, 0.1)
 df = data.frame(y, x1, x2, x3)
 nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
   decay=0.01, maxit = 1000, trace = FALSE)
-predict.fun = function(object, newdata)
+predict_fun = function(object, newdata)
   as.numeric(predict(object, newdata, type="raw"))
-p1 = plot(computeALE(nnet.fit, df, feature="x1", grid.size=50,
-  predict.fun = predict.fun))
-p2 = plot(computeALE(nnet.fit, df, feature="x2", grid.size=50,
-  predict.fun = predict.fun))
-p3 = plot(computeALE(nnet.fit, df, feature="x3", grid.size=50,
-  predict.fun = predict.fun))
+p1 = plot(computeALE(nnet.fit, df, feature="x1", grid_size=50,
+  predict_fun = predict_fun))
+p2 = plot(computeALE(nnet.fit, df, feature="x2", grid_size=50,
+  predict_fun = predict_fun))
+p3 = plot(computeALE(nnet.fit, df, feature="x3", grid_size=50,
+  predict_fun = predict_fun))
 grid.arrange(p1, p2, p3, ncol=2)
 ```
 

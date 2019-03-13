@@ -6,14 +6,14 @@
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
-#' @param grid.size [\code{integer(1)}]\cr Grid size.
-#' @param grid.method [\code{character(1)}]\cr
+#' @param grid_size [\code{integer(1)}]\cr Grid size.
+#' @param grid_method [\code{character(1)}]\cr
 #'   "uniform": set grid points equidistant between min and max feature value.\cr
-#'   "quantile": set grid points equal to 1/grid.size quantiles (same as ALE).
-#'     Here, grid.size is equal to the number of segments,
-#'     e.g. for grid.size = 2: x.grid = c(min(x), median(x), max(x)).\cr
+#'   "quantile": set grid points equal to 1/grid_size quantiles (same as ALE).
+#'     Here, grid_size is equal to the number of segments,
+#'     e.g. for grid_size = 2: x.grid = c(min(x), median(x), max(x)).\cr
 #'   "sample": sample grid points from actual data points.
-#' @template arg_predict.fun
+#' @template arg_predict_fun
 #' @param l [\code{integer(1)}]\cr
 #'   Number of points that are defined as local to a grid point
 #'   (Local Partial Dependence).
@@ -42,25 +42,25 @@
 #'   df = data.frame(y, x1, x2, x3)
 #'   nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
 #'     decay=0.01, maxit = 1000, trace = FALSE)
-#'   predict.fun = function(X.model, newdata)
+#'   predict_fun = function(X.model, newdata)
 #'     as.numeric(predict(object, newdata))
-#'   p1 = plot(computePD(nnet.fit, df, feature="x1", grid.size=50))
-#'   p2 = plot(computePD(nnet.fit, df, feature="x2", grid.size=50))
-#'   p3 = plot(computePD(nnet.fit, df, feature="x3", grid.size=50))
+#'   p1 = plot(computePD(nnet.fit, df, feature="x1", grid_size=50))
+#'   p2 = plot(computePD(nnet.fit, df, feature="x2", grid_size=50))
+#'   p3 = plot(computePD(nnet.fit, df, feature="x3", grid_size=50))
 #'   grid.arrange(p1, p2, p3, ncol=2)
 #' }
 computePD = function(model, data, feature,
-                     grid.size = "default", grid.method = "uniform",
-                     predict.fun = function(object, newdata) predict(object, newdata = newdata),
+                     predict_fun = predict,
+                     grid_size = "default", grid_method = "uniform",
                      l = "default", wp = 0,
                      derivative = FALSE, multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
-  assert_function(predict.fun, args = c("object"))
+  assert_function(predict_fun, args = c("object"))
 
-  if (grid.size == "default") {
-    grid.size = round(nrow(data)/5)
-    if (grid.size > 40) grid.size = 40
-  } else assert_integerish(grid.size, lower = 2, max.len = 1, any.missing = FALSE)
+  if (grid_size == "default") {
+    grid_size = round(nrow(data)/5)
+    if (grid_size > 40) grid_size = 40
+  } else assert_integerish(grid_size, lower = 2, max.len = 1, any.missing = FALSE)
 
   lokal = FALSE
   if (l == "default") {
@@ -78,30 +78,30 @@ computePD = function(model, data, feature,
 
   ##############################################################################
   x = data[, feature]
-  if (grid.method == "uniform") {
-    x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = grid.size)
-  } else if (grid.method == "quantile") {
-    x.grid = c(min(x), as.numeric(quantile(x, seq(1/grid.size, 1,
-      length.out = grid.size), type = 1)))
-    grid.size = length(x.grid)
-  } else if (grid.method == "sample") {
-    x.grid = sort(sample(x, grid.size))
-  } else stop("computePD: grid.method ", grid.method, " not supported.")
+  if (grid_method == "uniform") {
+    x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = grid_size)
+  } else if (grid_method == "quantile") {
+    x.grid = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
+      length.out = grid_size), type = 1)))
+    grid_size = length(x.grid)
+  } else if (grid_method == "sample") {
+    x.grid = sort(sample(x, grid_size))
+  } else stop("computePD: grid_method ", grid_method, " not supported.")
 
   if (multiclass) {
-    y.hat.1 = predict.fun(model, newdata = data[1,])
+    y.hat.1 = predict_fun(model, newdata = data[1,])
     if (is.matrix(y.hat.1) | is.data.frame(y.hat.1)) {
-      y.hat = matrix(nrow = grid.size, ncol = ncol(y.hat.1))
+      y.hat = matrix(nrow = grid_size, ncol = ncol(y.hat.1))
       classes = colnames(y.hat.1)
       colnames(y.hat) = classes
     } else {
-      y.hat = matrix(nrow = grid.size, ncol = length(y.hat.1))
+      y.hat = matrix(nrow = grid_size, ncol = length(y.hat.1))
       classes = names(y.hat.1)
       colnames(y.hat) = classes
     }
-  } else y.hat = numeric(grid.size)
+  } else y.hat = numeric(grid_size)
 
-  for (i in 1:(grid.size)) {
+  for (i in 1:(grid_size)) {
     distances = abs(x - x.grid[i])
     weights = (1 - normalize(distances))^wp
     if (lokal) {
@@ -119,32 +119,33 @@ computePD = function(model, data, feature,
       if (multiclass) {
         for (class in classes) {
           y.hat[i, class] = weighted.mean(derivative(tmp.data[, feature],
-            feature, tmp.data, model, predict.fun = function(object, newdata)
+            feature, tmp.data, model, predict_fun = function(object, newdata)
               as.numeric(predict(object, newdata)[, class])), weights)
         }
       } else {
         y.hat[i] = weighted.mean(derivative(tmp.data[, feature],
-          feature, tmp.data, model, predict.fun = predict.fun), weights)
+          feature, tmp.data, model, predict_fun = predict_fun), weights)
       }
     } else {
-      if (multiclass) y.hat[i,] = apply(predict.fun(model, newdata = tmp.data), 2, weighted.mean, weights)
-      else y.hat[i] = weighted.mean(predict.fun(model, newdata = tmp.data), weights)
+      if (multiclass) y.hat[i,] = apply(predict_fun(model, newdata = tmp.data), 2,
+        weighted.mean, weights)
+      else y.hat[i] = weighted.mean(predict_fun(model, newdata = tmp.data), weights)
     }
   }
 
   if (multiclass) {
-    plot.data = reshape2::melt(data = data.frame(x = x.grid, y.hat),
+    plot_data = reshape2::melt(data = data.frame(x = x.grid, y.hat),
       id.vars = "x", variable.name = "class", value.name = "probability")
   } else {
-    plot.data = data.frame(x = x.grid, y.hat)
+    plot_data = data.frame(x = x.grid, y.hat)
   }
   fe_x = (x.grid[-length(x.grid)] + x.grid[-1])/2
   fe_f = diff(y.hat)/diff(x.grid)
   return(structure(list(fp_x = x.grid, fp_f = y.hat,
                         fe_x = fe_x, fe_f = fe_f,
-                        plot.data = plot.data,
+                        plot_data = plot_data,
                         x_org = x,
-                        grid.size = grid.size, l = l,
+                        grid_size = grid_size, l = l,
                         multiclass = multiclass, feature = feature),
                    class = c("PD", "IntameFeatureEffect"),
                    comment = "Partial Dependence"))
@@ -169,12 +170,12 @@ print.PD = function(x, ...) {
 plot.PD = function(x, title = "PD Plot", rugs = TRUE, ...) {
   PD = x
   if (PD$multiclass) {
-    ggplot(data = PD$plot.data,
+    ggplot(data = PD$plot_data,
       aes(x = x, y = probability, group = class, col = class)) +
       geom_line() + geom_point() +
       xlab(PD$feature) + ggtitle(title)
   } else {
-     p = ggplot(data = PD$plot.data, mapping = aes(x, y.hat)) +
+     p = ggplot(data = PD$plot_data, mapping = aes(x, y.hat)) +
       geom_line() + geom_point()
      if (rugs) p = p + geom_rug(data = data.frame(x = PD$x_org), aes(x = x),
        alpha = .2, sides = "b", inherit.aes = FALSE)

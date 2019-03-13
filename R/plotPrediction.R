@@ -13,28 +13,28 @@ plotPrediction = function(model, ...) {
 }
 
 #' @export
-plotPrediction.default = function(model, data, feature, predict.fun = predict, loess = TRUE,
+plotPrediction.default = function(model, data, feature, predict_fun = predict, loess = TRUE,
     span = .2, plot.points = TRUE, ...) {
   x = data[, feature]
-  y.hat = predict.fun(model, newdata = data)
-  plot.data = data.frame(x, y.hat)
-  colnames(plot.data) = c(feature, "y.hat")
+  y.hat = predict_fun(model, newdata = data)
+  plot_data = data.frame(x, y.hat)
+  colnames(plot_data) = c(feature, "y.hat")
   if (loess) {
-    loess.mod = loess(y.hat ~ x, data = plot.data, span = span, ...)
+    loess.mod = loess(y.hat ~ x, data = plot_data, span = span, ...)
     y.hat.loess = predict(loess.mod)
-    plot.data = data.frame(plot.data, y.hat.loess)
+    plot_data = data.frame(plot_data, y.hat.loess)
   }
-  p = ggplot(data = plot.data, aes(x = x, y = y.hat)) + geom_line(alpha = .7) + xlab(feature)
+  p = ggplot(data = plot_data, aes(x = x, y = y.hat)) + geom_line(alpha = .7) + xlab(feature)
   if (plot.points) p = p + geom_point(alpha = .2)
   if (loess) {
     p = p + geom_line(aes(y = y.hat.loess), col = "blue")
   }
-  return(list(plot = p, plot.data = plot.data))
+  return(list(plot = p, plot_data = plot_data))
 }
 
 #' @export
 plotPrediction.WrappedModel = function(model, task, feature, ...) {
   data = mlr::getTaskData(task)
-  predict.fun = function(model, newdata = data) mlr::getPredictionResponse(predict(model, newdata = data))
-  plotPrediction.default(model, data, feature, predict.fun = predict.fun, ...)
+  predict_fun = function(model, newdata = data) mlr::getPredictionResponse(predict(model, newdata = data))
+  plotPrediction.default(model, data, feature, predict_fun = predict_fun, ...)
 }

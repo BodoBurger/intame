@@ -6,7 +6,7 @@
 #' @template arg_data
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
-#' @template arg_predict.fun
+#' @template arg_predict_fun
 #' @template arg_metric_name
 #' @param threshold [\code{numeric(1)}] Stopping criterium.
 #' @param max_splits [\code{integer(1)}]\cr
@@ -57,7 +57,7 @@
 #' AME.x2
 #' plot(AME.x2)
 intame = function(model, data, feature,
-                  predict.fun = function(object, newdata) predict(object, newdata),
+                  predict_fun = function(object, newdata) predict(object, newdata),
                   metric_name = "R2int", threshold = "default", max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
@@ -65,14 +65,14 @@ intame = function(model, data, feature,
                   ...) {
   assert_choice(feature, colnames(data))
   assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
-  assert_choice(fe_method, c("ALE", "PDeriv"))
+  assert_choice(fe_method, c("ALE", "PD"))
 
   if (fe_method == "ALE") {
     FE = computeALE(model = model, data = data, feature = feature,
-      predict.fun = predict.fun, grid.size = fe_grid_size, ...)
-  } else if (fe_method == "PDeriv") {
+      predict_fun = predict_fun, grid_size = fe_grid_size, ...)
+  } else if (fe_method == "PD") {
     FE = computePD(model = model, data = data, feature = feature,
-      predict.fun = predict.fun, grid.size = fe_grid_size, derivative = FALSE, ...)
+      predict_fun = predict_fun, grid_size = fe_grid_size, derivative = FALSE, ...)
   }
   fp_x = FE$fp_x
   fp_f = FE$fp_f
@@ -110,13 +110,13 @@ intame = function(model, data, feature,
       y.hat.mean[i] = x.interval.average[i] * AME[i] + coefficients_interval[1]
     }
   } else {
-    y.hat = predict.fun(model, data)
+    y.hat = predict_fun(model, data)
     bounds[n_intervals+1] = bounds[n_intervals+1] + 0.000001
     for (i in 1:n_intervals) {
       selection = x >= bounds[i] & x < bounds[i+1]
       data.interval = data[selection,]
       AME[i] = ame::computeAME(model, data.interval, feature,
-        predict.fun = predict.fun)[, feature]
+        predict.fun = predict_fun)[, feature]
       y.hat.mean[i] = mean(y.hat[selection])
       x.interval.average[i] = mean(x[selection])
     }

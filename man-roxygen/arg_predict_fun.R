@@ -1,4 +1,4 @@
-#' @param predict.fun [\code{function(1)}]\cr
+#' @param predict_fun [\code{function(1)}]\cr
 #'   The function that should be used to generate predictions from \code{model}.
 #'   The specified prediction function is subject to subsequent numeric
 #'   differentiation and thus needs to be carefully chosen in order to receive the correct
