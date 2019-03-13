@@ -8,7 +8,9 @@
 #'   Feature name, subset of \code{colnames(data)}.
 #' @template arg_predict_fun
 #' @template arg_metric_name
-#' @param threshold [\code{numeric(1)}] Stopping criterium.
+#' @param threshold [\code{numeric(1)}]\cr
+#'   Stopping criterium. See \link[intame]{suggest_threshold} for more details
+#'   and explanation of default values.
 #' @param max_splits [\code{integer(1)}]\cr
 #'   Number of intervals.
 #' @param fe_method [\code{character(1)}]\cr
@@ -22,9 +24,9 @@
 #' @param x_splits [\code{numeric}]\cr
 #'   Define interval limits manually. If given, search for optimal split points
 #'   skipped.
-#' @param use_AME [\code{logical(1)}]
+#' @param use_AME [\code{logical(1)}]\cr
 #'   Calculate "classic" Average Marginal Effects for each interval (not recommended).
-#' @param use_iterative_algorithm (recommended)
+#' @param use_iter_algo (recommended)
 #' @param ... Arguments passed on to other functions: computeALE, computePD
 #'
 #' @return
@@ -61,7 +63,7 @@ intame = function(model, data, feature,
                   metric_name = "R2int", threshold = "default", max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
-                  use_AME = FALSE, use_iterative_algorithm = TRUE,
+                  use_AME = FALSE, use_iter_algo = TRUE,
                   ...) {
   assert_choice(feature, colnames(data))
   assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
@@ -79,7 +81,7 @@ intame = function(model, data, feature,
   fe_x = FE$fe_x
   fe_f = FE$fe_f
   if (is.null(x_splits)) {
-    if (use_iterative_algorithm) {
+    if (use_iter_algo) {
       if (threshold == "default") {
         threshold = suggest_threshold(model, data, feature, metric_name,
           fe_method, fe = FE)$threshold

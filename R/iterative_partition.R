@@ -28,11 +28,10 @@ iterative_partition = function(x, f, metric_name = "R2int",
   x_order = order(x)
   x = x[x_order]
   f = f[x_order]
+  SST =  sum((f-mean.default(f))^2)
   mod_0 = .lm.fit(cbind(1, x), f)
-  opt_metric = extract_metric_part_from_lm(mod_0$residuals, f, x, metric_name)
-  if (metric_name == "Frechet") {
-    opt_metric = aggregate_metric_parts(list(opt_metric), NULL, "Frechet")
-  }
+  part_0 = list(extract_metric_part_from_lm(mod_0$residuals, f, x, metric_name))
+  opt_metric = aggregate_metric_parts(part_0, 1, SST, metric_name)
   opt_models = list(mod_0)
   opt_split = integer(0)
   metrics_history = opt_metric
@@ -72,7 +71,8 @@ iterative_partition = function(x, f, metric_name = "R2int",
           metric_parts_tmp[[i]] = extract_metric_part_from_lm(residuals_tmp, f_tmp,
             x_tmp, metric_name)
         }
-        metric_tmp = aggregate_metric_parts(metric_parts_tmp, weights_tmp, metric_name)
+        metric_tmp = aggregate_metric_parts(metric_parts_tmp, weights_tmp, SST,
+          metric_name)
         if (compare_metric_values(metric_tmp, opt_metric, metric_name)) {
           opt_metric = metric_tmp
           opt_split = split_tmp

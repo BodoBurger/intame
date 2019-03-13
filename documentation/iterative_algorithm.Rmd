@@ -80,28 +80,35 @@ sd(df$y)
 
 ```{r ALE}
 grid_size = 30
-nnet.ale1 = computeALE(nnet.mod$learner.model, df, "x1", grid_size)
+nnet.ale1 = computeALE(nnet.mod$learner.model, df, "x1", grid_size = grid_size)
 plot(nnet.ale1)
 px1 = nnet.ale1$fp_x
 pf1 = nnet.ale1$fp_f
-nnet.ale2 = computeALE(nnet.mod$learner.model, df, "x2", grid_size)
+nnet.ale2 = computeALE(nnet.mod$learner.model, df, "x2", grid_size = grid_size)
 plot(nnet.ale2)
 px2 = nnet.ale2$fp_x
 pf2 = nnet.ale2$fp_f
 
-nnet.pd2 = computePD(nnet.mod$learner.model, df, "x2", grid_size)
+nnet.pd2 = computePD(nnet.mod$learner.model, df, "x2", grid_size = grid_size)
 plot(nnet.pd2)
+
+
 ```
 
 ## Partition AL predictions
 
 ```{r}
-saf_x1 = iterative_partition(px1, pf1, threshold = .95)
+saf_x1 = iterative_partition(px1, pf1, metric_name = "R2", threshold = .95)
 plot(saf_x1)
 saf_x1
 
-saf_x2 = iterative_partition(px2, pf2, "R2int", threshold = .9, max_splits = 10,
-  greedy = TRUE)
+saf_x2 = iterative_partition(px2, pf2, "R2int", threshold = .95, max_splits = 10,
+  greedy = FALSE)
+plot(saf_x2)
+saf_x2
+
+saf_x2 = iterative_partition(px2, pf2, "R2", threshold = .95, max_splits = 10,
+  greedy = FALSE)
 plot(saf_x2)
 saf_x2
 
@@ -113,6 +120,7 @@ intame_x2
 th = .3
 sd(df$y) / 5
 th = max(sd(pf1), sd(pf2)) / 5
+th = suggest_threshold(nnet.mod$learner.model, df, "x2", "L2")$threshold
 
 saf_x2.L2 = iterative_partition(px2, pf2, "L2", threshold = th, max_splits = 10,
   greedy = FALSE)
@@ -124,7 +132,7 @@ saf_x2.L1 = iterative_partition(px2, pf2, "L1", threshold = th, max_splits = 10,
 plot(saf_x2.L1)
 saf_x2.L1
 
-saf_x2_non_greedy = iterative_partition(px2, pf2, "R2int", threshold = .95, max_splits = 10,
+saf_x2_non_greedy = iterative_partition(px2, pf2, "R2", threshold = .98, max_splits = 10,
   greedy = FALSE)
 plot(saf_x2_non_greedy)
 saf_x2_non_greedy
