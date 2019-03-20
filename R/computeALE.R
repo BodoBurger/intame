@@ -10,6 +10,9 @@
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
 #' @param grid_breaks [\code{numeric}]
 #' @template arg_predict_fun
+#' @param center_at_0 [\code{logical(1)}]\cr
+#'   Apley suggests centering AL predictions around zero.\cr
+#'   Set to FALSE to compare ALE and PD.
 #' @param multiclass [\code{logical(1)}]\cr
 #'   If multiclassification task
 #' @param ... ignored
@@ -38,7 +41,7 @@
 computeALE = function(model, data, feature,
                       predict_fun = predict,
                       grid_size = "default", grid_breaks = NULL,
-                      multiclass = FALSE, ...) {
+                      center_at_zero = FALSE, multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
   assert_function(predict_fun, args = c("object"))
 
@@ -105,6 +108,9 @@ computeALE = function(model, data, feature,
     delta = as.numeric(tapply(delta, interval_indices, mean))
     f = c(0, cumsum(delta))
     f = f - sum((f[1:grid_size] + f[2:(grid_size + 1)])/2 * w) / sum(w)
+    if (!center_at_zero) {
+      f = f + mean(c(y_hat_l, y_hat_u))
+    }
     ale = delta/diff(z)
     plot_data = data.frame(fp_x = z, fp_f = f)
   }
