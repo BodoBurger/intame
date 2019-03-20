@@ -71,6 +71,19 @@ plot(computePD(spam.fit, spam.data, "people", grid_size = 30,
   predict_fun = spam.predict))
 ```
 
+### Quantile-based Average Marginal Effects
+
+`intame()` allows you to calculate Average Marginal Effects for each decile 
+(or another quantile) using `output_method = "AME"` and `x_splits = quantiles`.
+
+```{r}
+x_splits = quantile(df[, "x2"], probs = seq(0, 1, .1))[2:10] # do not use min and max
+AME.x2.quantiles = intame(nnet.mod, df, "x2", fe_grid_size = 20, output_method = "AME",
+  x_splits = x_splits)
+AME.x2.quantiles
+plot(AME.x2.quantiles)
+```
+
 ## `computePD()`
 
 ### Regression example using nnet

@@ -7,12 +7,14 @@
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
 #' @param grid_size [\code{integer(1)}]\cr Grid size.
-#' @param grid_method [\code{character(1)}]\cr
-#'   "uniform": set grid points equidistant between min and max feature value.\cr
-#'   "quantile": set grid points equal to 1/grid_size quantiles (same as ALE).
+#' @param grid_method [\code{character(1)}] c("uniform", "quantile", "sample")\cr
+#'   \itemize{
+#'     \item{"uniform": set grid points equidistant between min and max feature value.}
+#'     \item{"quantile": set grid points equal to 1/grid_size quantiles (same as ALE).
 #'     Here, grid_size is equal to the number of segments,
-#'     e.g. for grid_size = 2: x.grid = c(min(x), median(x), max(x)).\cr
-#'   "sample": sample grid points from actual data points.
+#'     e.g. for grid_size = 2: x.grid = c(min(x), median(x), max(x)).}
+#'     \item{"sample": sample grid points from actual data points.}
+#'   }
 #' @template arg_predict_fun
 #' @param l [\code{integer(1)}]\cr
 #'   Number of points that are defined as local to a grid point
