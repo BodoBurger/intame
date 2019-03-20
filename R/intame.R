@@ -164,12 +164,24 @@ print.Intame = function(x, ...) {
 
 #' @export
 summary.Intame = function(object, ...) {
-  cat("# Interval-based Marginal Effects for", object$feature, "#\n\n")
-  cat(format("Interval", width = 14, justify = "right"), " | Average Marginal Effect\n", sep = "")
+  cat("# Interval-based Marginal Effects for", object$feature, "#\n")
+  cat("Output method: ", object$output_method, "\n")
+  cat("---\n")
+  cat(format("Interval", width = 14, justify = "right"),
+    " | Average Marginal Effect\n", sep = "")
   for (i in seq_along(object$AME)) {
-    cat(format(names(object$AME)[i], width = 14, justify = "right"), " | ", object$AME[i], "\n", sep = "")
+    cat(format(names(object$AME)[i], width = 14, justify = "right"),
+      " | ", object$AME[i], "\n", sep = "")
   }
-  cat("\n")
+  cat("---\n")
+  cat("Number of intervals: ", length(object$AME), "\n")
+  if(!is.null(object$intame_partition)) {
+    ip = object$intame_partition
+    cat("---\n")
+    cat("Metric used to evaluate splits: ", ip$metric_name, "\n")
+    cat("Metric history: ", ip$metrics_history, "\n")
+    cat("Metric change when split added: ", ip$metrics_history_change, "\n")
+  }
 }
 
 #' Visualize the result of intame
@@ -187,7 +199,7 @@ plot.Intame = function(x, title = "default",
   assert_logical(show_slopes, len = 1)
   assert_logical(rugs, len = 1)
   if (title == "default") {
-    title = paste0("Intame using ", x$fe_method)
+    title = paste0("Intame using ", x$fe_method, ", output method: ", x$output_method)
   }
   AME = x$AME
   x.0 = x$x.interval.average
