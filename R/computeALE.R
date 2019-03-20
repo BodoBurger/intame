@@ -8,6 +8,7 @@
 #'   Feature name, subset of \code{colnames(data)}.
 #' @param grid_size [\code{integer(1)}]\cr
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
+#' @param grid_breaks [\code{numeric}]
 #' @template arg_predict_fun
 #' @param multiclass [\code{logical(1)}]\cr
 #'   If multiclassification task
@@ -36,7 +37,7 @@
 #' }
 computeALE = function(model, data, feature,
                       predict_fun = predict,
-                      grid_size = "default",
+                      grid_size = "default", grid_breaks = NULL,
                       multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
   assert_function(predict_fun, args = c("object"))
@@ -50,13 +51,19 @@ computeALE = function(model, data, feature,
 
   ##############################################################################
   x = data[, feature]
-  if (grid_size >= length(x)-1) {
-    warning("grid_size was set to length of feature.")
-    z = sort(x)
+  if (is.null(grid_breaks)) {
+    if (grid_size >= length(x)-1) {
+      warning("grid_size was set to equal (or greater) than number of obs.")
+      z = sort(x)
+    } else {
+      z = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
+        length.out = grid_size), type = 1)))
+        # c(min(), quantile()) necessary for grid_size = n
+    }
   } else {
-    z = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
-      length.out = grid_size), type = 1)))
-      # c(min(), quantile()) necessary for grid_size = n
+    if (!all(grid_breaks > min(x)) | !all(grid_breaks < max(x)))
+      stop("Provided grid_breaks not in range of feature values.")
+    z = c(min(x), sort(grid_breaks), max(x))
   }
   z = unique(z) # if grid_size > nrow(data) or x has lots of non-unique values
   grid_size = length(z) - 1
@@ -106,7 +113,8 @@ computeALE = function(model, data, feature,
                         fe_x = ale.x, fe_f = ale, # predicted derivatives
                         plot_data = plot_data,
                         x_org = x,
-                        grid_size = grid_size, interval_indices = interval_indices,
+                        grid = z, grid_size = grid_size,
+                        interval_indices = interval_indices,
                         multiclass = multiclass, feature = feature),
                    class = c("ALE", "IntameFeatureEffect"),
                    comment = "Accumulated Local Effect"))

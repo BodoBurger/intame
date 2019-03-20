@@ -24,8 +24,10 @@
 #' @param x_splits [\code{numeric}]\cr
 #'   Define interval limits manually. If given, search for optimal split points
 #'   skipped.
-#' @param use_AME [\code{logical(1)}]\cr
-#'   Calculate "classic" Average Marginal Effects for each interval (not recommended).
+#' @param output_method [\code{character(1)}]\cr
+#'   "lm": Report slope of linear model in each interval.
+#'   "ALE": Recalculate ALE with "optimal" intervals.
+#'   "AME": Calculate "classic" Average Marginal Effects for each interval.
 #' @param use_iter_algo (recommended)
 #' @param ... Arguments passed on to other functions: computeALE, computePD
 #'
@@ -63,7 +65,7 @@ intame = function(model, data, feature,
                   metric_name = "R2int", threshold = "default", max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
-                  use_AME = FALSE, use_iter_algo = TRUE,
+                  output_method = "lm", use_iter_algo = TRUE,
                   ...) {
   assert_choice(feature, colnames(data))
   assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
@@ -103,15 +105,23 @@ intame = function(model, data, feature,
   AME = numeric(n_intervals) # slope
   y.hat.mean = numeric(n_intervals) # ordinate
   x.interval.average = numeric(n_intervals) # abscissa
-  if (is.null(intame_partition)) use_AME = TRUE
-  if (!use_AME) {
+  #if (is.null(intame_partition)) use_AME = TRUE
+  ALEint = NULL
+  if (output_method == "lm") {
     for (i in 1:n_intervals) {
       coefficients_interval = intame_partition$models[[i]]$coefficients
       AME[i] = coefficients_interval[2]
       x.interval.average[i] = (bounds[i] + bounds[i+1])/2
       y.hat.mean[i] = x.interval.average[i] * AME[i] + coefficients_interval[1]
     }
-  } else {
+  } else if (output_method == "ALE") {
+    ALEint = computeALE(model = model, data = data, feature = feature,
+      predict_fun = predict_fun, grid_size = fe_grid_size,
+      grid_breaks = x_splits, ...)
+    AME = ALEint$fe_f
+    x.interval.average = ALEint$fe_x
+    y.hat.mean = (ALEint$fp_f[1:n_intervals] + ALEint$fp_f[2:(n_intervals+1)]) / 2
+  } else if (output_method == "AME") {
     y.hat = predict_fun(model, data)
     bounds[n_intervals+1] = bounds[n_intervals+1] + 0.000001
     for (i in 1:n_intervals) {
@@ -122,7 +132,7 @@ intame = function(model, data, feature,
       y.hat.mean[i] = mean(y.hat[selection])
       x.interval.average[i] = mean(x[selection])
     }
-  }
+  } else stop("output_method=", output_method, " not supported.")
 
   bounds.rounded = round(bounds, digits = 3)
   interval.desc = character(n_intervals)
@@ -141,7 +151,8 @@ intame = function(model, data, feature,
                         x = x,
                         fp_x = fp_x, fp_f = fp_f,
                         fe_x = fe_x, fe_f = fe_f,
-                        fe_method = fe_method),
+                        FE = FE, fe_method = fe_method,
+                        output_method = output_method, ALEint = ALEint),
                    class = "Intame",
                    comment = "Main class of intame package."))
 }
@@ -184,10 +195,15 @@ plot.Intame = function(x, title = "default",
   bounds = x$bounds
   p = ggplot() +
     geom_line(mapping = aes(x$fp_x, x$fp_f), alpha = .3)
-  for(i in 1:(length(bounds)-1)) {
-    p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] -
-      (x.0[i] - bounds[i]) * AME[i], y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])),
+  if (x$output_method == "ALE") {
+    p = p + geom_line(data = x$ALEint$plot_data, aes(x = fp_x, y = fp_f),
       col = "blue", inherit.aes = FALSE)
+  } else {
+    for(i in 1:(length(bounds)-1)) {
+      p = p + geom_line(mapping = aes_string(bounds[i:(i+1)], c(y.0[i] -
+        (x.0[i] - bounds[i]) * AME[i], y.0[i] + (bounds[i+1] - x.0[i]) * AME[i])),
+        col = "blue", inherit.aes = FALSE)
+    }
   }
   if (length(x$x_splits) > 0) {
     p = p + geom_vline(xintercept = bounds, linetype = 3, size = .6,
