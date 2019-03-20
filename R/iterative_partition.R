@@ -35,6 +35,7 @@ iterative_partition = function(x, f, metric_name = "R2int",
   opt_models = list(mod_0)
   opt_split = integer(0)
   metrics_history = opt_metric
+  metrics_history_change = numeric(0)
   splits_history = list()
   n_splits = 0
   if (!compare_metric_values(opt_metric, threshold, metric_name)) {
@@ -80,6 +81,8 @@ iterative_partition = function(x, f, metric_name = "R2int",
         }
       }
       metrics_history = c(metrics_history, opt_metric)
+      metrics_history_change = c(metrics_history_change, (metrics_history[n_splits+1] -
+        metrics_history[n_splits])/metrics_history[n_splits])
       splits_history[[n_splits]] = opt_split
       if (compare_metric_values(opt_metric, threshold, metric_name) ||
           n_splits == max_splits) {
@@ -98,6 +101,7 @@ iterative_partition = function(x, f, metric_name = "R2int",
                  splits = opt_split,
                  n_splits = n_splits,
                  metrics_history = metrics_history,
+                 metrics_history_change = metrics_history_change,
                  splits_history = splits_history,
                  x_org = x, f_org = f,
                  metric_name = metric_name,
