@@ -10,7 +10,7 @@
 #'   Number of intervals/segments. Same as parameter K in ALEPlot package.
 #' @param grid_breaks [\code{numeric}]
 #' @template arg_predict_fun
-#' @param center_at_0 [\code{logical(1)}]\cr
+#' @param center_at_zero [\code{logical(1)}]\cr
 #'   Apley suggests centering AL predictions around zero.\cr
 #'   Set to FALSE to compare ALE and PD.
 #' @param multiclass [\code{logical(1)}]\cr

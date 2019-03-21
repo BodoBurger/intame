@@ -6,9 +6,9 @@
 #' @param y [\code{numeric}]\cr
 #'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
 #' @param intervals [\code{integer}]\cr Number of intervals.
-#' @param part.method c("CART", "cluster")
+#' @param part_method c("CART", "cluster")
 #'
-#' @return split.points numeric(length(n.parts)-1)
+#' @return split.points numeric(length(n_parts)-1)
 #' @export
 #'
 #' @examples
@@ -20,23 +20,23 @@
 #' df = data.frame(x, y)
 #' breaks.rpart = partition(df$x, df$y, intervals = 4)
 #' breaks.cluster = partition(df$x, df$y, intervals = 4,
-#'   part.method = "cluster")
+#'   part_method = "cluster")
 #' ggplot() +
 #'   geom_point(data=df, aes(x = x, y = y)) +
 #'   geom_vline(aes(xintercept = breaks.rpart-.03,
 #'     color = "rpart")) +
 #'   geom_vline(aes(xintercept = breaks.cluster+.03,
 #'     color = "cluster"))
-partition = function(x, y, intervals, part.method="CART") {
+partition = function(x, y, intervals, part_method="CART") {
   assert_numeric(x)
   assert_numeric(y)
   if (length(x) != length(y)) stop("x and y have to have the same length.")
   assert_integerish(intervals)
 
-  if (part.method == "CART") return(partitionCART(x, y, (intervals-1)))
-  #else if (part.method == "MOB") return(partitionMOB(x, y, intervals))
-  else if (part.method == "cluster") return(partitionCluster(x, y, intervals))
-  else stop("Partition method \'", part.method, "\' not implemented.")
+  if (part_method == "CART") return(partitionCART(x, y, (intervals-1)))
+  #else if (part_method == "MOB") return(partitionMOB(x, y, intervals))
+  else if (part_method == "cluster") return(partitionCluster(x, y, intervals))
+  else stop("Partition method \'", part_method, "\' not implemented.")
 }
 
 #' Partition using CART algorithm
@@ -46,11 +46,11 @@ partition = function(x, y, intervals, part.method="CART") {
 #'   the values of feature \code{y}.
 #' @param y [\code{numeric}]\cr
 #'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
-#' @param max.splits Upper limit to applied splits on feature space.
-partitionCART = function(x, y, max.splits) {
+#' @param max_splits Upper limit to applied splits on feature space.
+partitionCART = function(x, y, max_splits) {
   mod = rpart::rpart(y ~ x, cp = 0, maxcompete = 0,
     minsplit = 1, minbucket = 1, xval = 0, maxsurrogate = 0)
-  cp.ind = max(which(mod$cptable[,"nsplit"] <= max.splits))
+  cp.ind = max(which(mod$cptable[,"nsplit"] <= max_splits))
   mod = rpart::prune(mod, cp = mod$cptable[cp.ind, "CP"])
   unname(mod$splits[,"index"])
 }
@@ -68,16 +68,16 @@ partitionCART = function(x, y, max.splits) {
 #'   the values of feature \code{y}.
 #' @param y [\code{numeric}]\cr
 #'   Partitioning feature. Values on which basis feature \code{x} is partitioned.
-#' @param n.parts [\code{integer}] Number of intervals.
+#' @param n_parts [\code{integer}] Number of intervals.
 #' @param eval.fun [\code{function}]\cr
 #'   Method
-partitionCluster = function(x, y, n.parts, eval.fun = absDiffMean) {
-  if (n.parts < 2) stop("\'n.pars\' has to be greater equal 2!")
+partitionCluster = function(x, y, n_parts, eval.fun = absDiffMean) {
+  if (n_parts < 2) stop("\'n.pars\' has to be greater equal 2!")
 
   s = sort(x, index.return=TRUE)
   yp = as.list(y[s$ix])
   intervals = lapply(s$x, function(x) c(x, x))
-  while(length(yp) > n.parts) {
+  while(length(yp) > n_parts) {
     i = which.min(eval.fun(yp))
     intervals[[i]] = c(intervals[[i]][1], intervals[[i+1]][2])
     intervals[[i+1]] = NULL

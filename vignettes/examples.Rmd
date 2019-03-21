@@ -144,7 +144,7 @@ y = runif(n, 0, 10)
 df = data.frame(x, y)
 breaks.rpart = partition(df$x, df$y, intervals = 4)
 breaks.cluster = partition(df$x, df$y, intervals = 4,
-  part.method = "cluster")
+  part_method = "cluster")
 ggplot() + 
   geom_point(data=df, aes(x = x, y = y)) +
   geom_vline(aes(xintercept = breaks.rpart-.03,
@@ -162,10 +162,24 @@ x = runif(n, 0, 1000)
 y = x * sin(.01*x) + rnorm(n, 0, 10)
 df = data.frame(x, y)
 poly12.mod = lm(y ~ poly(x, 12, raw = TRUE), data = df)
+ALE = computeALE(poly12.mod, df, "x")
 me = derivative(x, "x", df, poly12.mod)
-breaks.rpart = partition(df$x, me, 5)
-breaks.cluster = partition(df$x, me, 5, part.method = "cluster")
-ggplot() + geom_line(data=df, mapping=aes(x = x, y = y)) +
-  geom_vline(aes(xintercept = breaks.rpart+3, color = "rpart")) +
-  geom_vline(aes(xintercept = breaks.cluster-3, color = "cluster"))
+breaks.rpart = partition(ALE$fe_x, ALE$fe_f, 5)
+breaks.cluster = partition(ALE$fe_x, ALE$fe_f, 5, part_method = "cluster")
+fixed.partition = iterative_partition(ALE$fp_x, ALE$fp_f,
+  threshold = .999, max_splits = 4)
+iter.partition = iterative_partition(ALE$fp_x, ALE$fp_f)
+p1 = ggplot() + geom_line(data=ALE$plot_data, mapping=aes(x = fp_x, y = fp_f)) +
+  geom_vline(aes(xintercept = breaks.rpart+3), col = "red") +
+  ggtitle("1) Rpart on derivatives")
+p2 = ggplot() + geom_line(data=ALE$plot_data, mapping=aes(x = fp_x, y = fp_f)) +
+  geom_vline(aes(xintercept = breaks.cluster-3), col = "green") +
+  ggtitle("2) Clustering of derivatives")
+p3 = ggplot() + geom_line(data=ALE$plot_data, mapping=aes(x = fp_x, y = fp_f)) +
+  geom_vline(aes(xintercept = ALE$fp_x[fixed.partition$splits]+6), col = "blue") +
+  ggtitle("3) Fitting linear models (fixed number)")
+p4 = ggplot() + geom_line(data=ALE$plot_data, mapping=aes(x = fp_x, y = fp_f)) +
+  geom_vline(aes(xintercept = ALE$fp_x[iter.partition$splits]+6), col = "blue") +
+  ggtitle("4) Fitting linear models (iteratively)")
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol=2)
 ```

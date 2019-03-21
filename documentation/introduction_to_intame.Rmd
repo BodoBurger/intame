@@ -129,8 +129,8 @@ plot(ALE.x2) +
 rpart returns reasonable intervals.
 
 ```{r fig.cap="Green: breaks based on PD. Blue: ALE."}
-breaks.ALE.cluster = partition(ALE.x2$fe_x, ALE.x2$fe_f, 5, part.method = "cluster")
-breaks.PD.cluster = partition(PD.x2$fe_x, PD.x2$fe_f, 5,  part.method = "cluster")
+breaks.ALE.cluster = partition(ALE.x2$fe_x, ALE.x2$fe_f, 5, part_method = "cluster")
+breaks.PD.cluster = partition(PD.x2$fe_x, PD.x2$fe_f, 5,  part_method = "cluster")
 plot(ALE.x2) +
   geom_vline(xintercept = breaks.PD.cluster, col = "green") +
   geom_vline(xintercept = breaks.ALE.cluster, col = "blue")

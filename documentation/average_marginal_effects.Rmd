@@ -106,7 +106,7 @@ split.points = partition(df$x1, poly12.ime, 2)
 split.points = partition(df$x1[-74], poly12.ime[-74], 2) # ohne Ausreißer
 split.points = partition(df$x1[-74], poly12.ime[-74], 7) # ohne Ausreißer
 split.points = partition(df$x1[-74], poly12.ime[-74], 7, 
-  part.method = "cluster") # ohne Ausreißer
+  part_method = "cluster") # ohne Ausreißer
 
 ggplot(df, aes(x = x1, y = y)) + geom_point() +
   geom_point(mapping = aes(x = df$x1, y = poly12.ime, col = "AME")) +
