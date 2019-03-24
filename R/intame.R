@@ -151,6 +151,7 @@ intame = function(model, data, feature,
                         x = x,
                         fp_x = fp_x, fp_f = fp_f,
                         fe_x = fe_x, fe_f = fe_f,
+                        metric_name = metric_name,
                         FE = FE, fe_method = fe_method,
                         output_method = output_method, ALEint = ALEint),
                    class = "Intame",
@@ -199,7 +200,8 @@ plot.Intame = function(x, title = "default",
   assert_logical(show_slopes, len = 1)
   assert_logical(rugs, len = 1)
   if (title == "default") {
-    title = paste0("Intame using ", x$fe_method, ", output method: ", x$output_method)
+    title = paste0("Intame using ", x$fe_method, ", metric: ", x$metric_name,
+      ", output method: ", x$output_method)
   }
   AME = x$AME
   x.0 = x$x.interval.average

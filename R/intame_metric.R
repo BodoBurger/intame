@@ -41,6 +41,8 @@ suggest_threshold = function(model, data, features,
         fe[[i]] = computeFeatureEffect(fe_method, model, data, features[i], ...)
         SSTs[i] = compute_sst(fe[[i]]$fp_f)
       }
+    } else {
+      SSTs = compute_sst(fe$fp_f)
     }
     var_fraction = 1 - explained_fraction # e.g. 0.05 corresponds to R squared of 95%
     threshold = var_fraction * max(SSTs)
@@ -69,7 +71,12 @@ extract_metric_part_from_lm = function(residuals, f, x, metric_name) {
   } else if (metric_name == "L1") {
     sum(abs(residuals))
   } else if (metric_name == "R2int") {
-    1 - sum(residuals^2) / sum((f-mean.default(f))^2)
+    denom_tmp = sum((f-mean.default(f))^2)
+    if (denom_tmp == 0) {
+      1
+    } else {
+      1 - sum(residuals^2) / denom_tmp
+    }
   } else if (metric_name == "R2") {
     sum(residuals^2)
   } else if (metric_name == "Frechet") {
