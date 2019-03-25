@@ -4,6 +4,7 @@ ImplementedMetrics = c("R2", "R2int", "L2", "L1", "Frechet")
 # - RSS(i) / RSS(i-1)
 
 compute_sst = function(x) sum((x-mean.default(x))^2)
+compute_sat = function(x) sum(abs(x-mean.default(x)))
 
 #' Find sensible threshold depending on the metric and data
 #'
@@ -34,18 +35,20 @@ suggest_threshold = function(model, data, features,
   if (metric_name %in% c("R2", "R2int"))
     threshold = explained_fraction
   else if (metric_name %in% c("L2", "L1")) {
+    if (metric_name == "L2") compute_st = compute_sst
+    else compute_st = compute_sat
     if (is.null(fe)) {
       fe = vector(mode = "list", length(features))
-      SSTs = numeric(length(features))
+      STs = numeric(length(features))
       for (i in seq_along(features)) {
         fe[[i]] = computeFeatureEffect(fe_method, model, data, features[i], ...)
-        SSTs[i] = compute_sst(fe[[i]]$fp_f)
+        STs[i] = compute_st(fe[[i]]$fp_f)
       }
     } else {
-      SSTs = compute_sst(fe$fp_f)
+      STs = compute_st(fe$fp_f)
     }
     var_fraction = 1 - explained_fraction # e.g. 0.05 corresponds to R squared of 95%
-    threshold = var_fraction * max(SSTs)
+    threshold = var_fraction * max(STs)
   }
   list(threshold = threshold,
        fe = fe)
