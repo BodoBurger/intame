@@ -39,7 +39,7 @@ iterative_partition = function(x, f, metric_name = "R2int",
   splits_history = list()
   n_splits = 0
   if (!compare_metric_values(opt_metric, threshold, metric_name)) {
-    cat(".")
+    if (verbose) cat(".")
     while(TRUE) {
       n_splits = n_splits + 1
       n_segments = n_splits + 1
@@ -88,7 +88,7 @@ iterative_partition = function(x, f, metric_name = "R2int",
           n_splits == max_splits) {
         break
       }
-      cat("|.")
+      if (verbose) cat("|.")
     }
   }
   if (verbose) {
