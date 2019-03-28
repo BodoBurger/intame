@@ -10,20 +10,25 @@
 #' @param max_splits [\code{integer(1)}] Stopping criterium.
 #' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
 #'   combination in the next step.
-#' @param verbose [\code{logical(1)}] Show console output.
+#' @param verbose [\code{logical(1)}]\cr
+#'   Show progress while looking for optimal split.
+#'   If \code{NULL} verbose is set \code{getOption("verbose")} (global verbose level).
 #' @param ... ignored
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
 iterative_partition = function(x, f, metric_name = "R2int",
                                threshold = .95, max_splits = 10L,
-                               greedy = FALSE, verbose = TRUE, ...) {
+                               greedy = FALSE, verbose = NULL, ...) {
   assert_numeric(x)
   assert_numeric(f)
   assert(length(x) == length(f))
   assert_choice(metric_name, choices = ImplementedMetrics)
   assert_numeric(threshold, len = 1)
   assert_integerish(max_splits, len = 1)
+  assert_logical(greedy)
+  assert_logical(verbose, null.ok = TRUE)
+  if (is.null(verbose)) verbose = getOption("verbose")
   l = length(x)
   x_order = order(x)
   x = x[x_order]
@@ -84,11 +89,11 @@ iterative_partition = function(x, f, metric_name = "R2int",
       metrics_history_change = c(metrics_history_change, (metrics_history[n_splits+1] -
         metrics_history[n_splits])/metrics_history[n_splits])
       splits_history[[n_splits]] = opt_split
+      if (verbose) cat("|.")
       if (compare_metric_values(opt_metric, threshold, metric_name) ||
           n_splits == max_splits) {
         break
       }
-      if (verbose) cat("|.")
     }
   }
   if (verbose) {
