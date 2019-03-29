@@ -60,7 +60,7 @@ features_of_interest = c("disp", "hp", "drat", "wt")
 
 suggest_threshold(lm.mod, mtcars, features_of_interest, "R2int", fe_method = "ALE")
 st = suggest_threshold(lm.mod, mtcars, features_of_interest, "L1", fe_method = "PD")
-st$threshold
+st
 ```
 
 

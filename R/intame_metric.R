@@ -32,9 +32,10 @@ suggest_threshold = function(model, data, features,
   assert_numeric(explained_fraction, lower = 1e-05, upper = 1 - 1e-05)
   if(!is.null(fe)) assert_class(fe, "IntameFeatureEffect")
 
-  if (metric_name %in% c("R2", "R2int"))
+  if (metric_name %in% c("R2", "R2int")) {
+    all_thresholds = setNames(rep(explained_fraction, length(features)), features)
     threshold = explained_fraction
-  else if (metric_name %in% c("L2", "L1")) {
+  } else if (metric_name %in% c("L2", "L1")) {
     if (metric_name == "L2") compute_st = compute_sst
     else compute_st = compute_sat
     if (is.null(fe)) {
@@ -48,10 +49,24 @@ suggest_threshold = function(model, data, features,
       STs = compute_st(fe$fp_f)
     }
     var_fraction = 1 - explained_fraction # e.g. 0.05 corresponds to R squared of 95%
-    threshold = var_fraction * max(STs)
+    all_thresholds = setNames(var_fraction * STs, features)
+    threshold = max(all_thresholds)
   }
-  list(threshold = threshold,
-       fe = fe)
+  structure(list(threshold = threshold,
+                 all_thresholds = all_thresholds,
+                 fe = fe, fe_method = fe_method,
+                 metric_name = metric_name,
+                 explained_fraction = explained_fraction),
+    class = c("IntameThreshold", "list"))
+}
+
+#' @export
+print.IntameThreshold = function(x, ...) {
+  cat("Threshold: ", x$threshold, " (metric: ", x$metric_name, ")\n", sep = "")
+  if (length(x$all_thresholds) > 1) {
+    cat("---\n")
+    print.default(x$all_thresholds)
+  }
 }
 
 #' Get metric part from a linear model

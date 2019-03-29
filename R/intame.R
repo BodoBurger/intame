@@ -86,7 +86,7 @@ intame = function(model, data, feature,
     if (use_iter_algo) {
       if (threshold == "default") {
         threshold = suggest_threshold(model, data, feature, metric_name,
-          fe_method, fe = FE)$threshold
+          fe_method, fe = FE, ...)$threshold
       }
       intame_partition = iterative_partition(fp_x, fp_f, metric_name, threshold, max_splits, ...)
       x_splits = fp_x[intame_partition$splits]

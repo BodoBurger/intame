@@ -119,8 +119,9 @@ intame_x2
 th = .3
 sd(df$y) / 5
 th = max(sd(pf1), sd(pf2)) / 5
-th = suggest_threshold(nnet.mod$learner.model, df, "x2", "L2",
-  explained_fraction = .95)$threshold
+th = suggest_threshold(nnet.mod$learner.model, df, c("x1", "x2"), "L2",
+  explained_fraction = .95)
+th
 
 saf_x2.L2 = iterative_partition(px2, pf2, "L2", threshold = th, max_splits = 10,
   greedy = FALSE)

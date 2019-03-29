@@ -24,7 +24,8 @@ iterative_partition = function(x, f, metric_name = "R2int",
   assert_numeric(f)
   assert(length(x) == length(f))
   assert_choice(metric_name, choices = ImplementedMetrics)
-  assert_numeric(threshold, len = 1)
+  if (test_class(threshold, "IntameThreshold")) threshold = threshold$threshold
+  else assert_numeric(threshold, len = 1)
   assert_integerish(max_splits, len = 1)
   assert_logical(greedy)
   assert_logical(verbose, null.ok = TRUE)
