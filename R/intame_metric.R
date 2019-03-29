@@ -1,7 +1,6 @@
 #' constant
-ImplementedMetrics = c("R2", "R2int", "L2", "L1", "Frechet")
-# TODOS New Metrics:
-# - RSS(i) / RSS(i-1)
+#' First element is taken as default metric
+ImplementedMetrics = c("L2", "L1", "R2", "R2int", "Frechet")
 
 compute_sst = function(x) sum((x-mean.default(x))^2)
 compute_sat = function(x) sum(abs(x-mean.default(x)))
@@ -26,11 +25,14 @@ suggest_threshold = function(model, data, features,
                              fe_method = "ALE", fe = NULL,
                              explained_fraction = .95,
                              ...) {
-  assert(all(features %in% colnames(data)))
+  if (is.null(features)) features = "x"
+  else assert(all(features %in% colnames(data)))
   assert_choice(metric_name, choices = ImplementedMetrics)
   assert_choice(fe_method, choices = c("ALE", "PD"))
   assert_numeric(explained_fraction, lower = 1e-05, upper = 1 - 1e-05)
-  if(!is.null(fe)) assert_class(fe, "IntameFeatureEffect")
+  if(is.null(model)) assert_numeric(fe)
+  else assert_class(fe, "IntameFeatureEffect", null.ok = TRUE)
+  assert_numeric(explained_fraction, lower = 0, upper = 1, len = 1)
 
   if (metric_name %in% c("R2", "R2int")) {
     all_thresholds = setNames(rep(explained_fraction, length(features)), features)
@@ -46,7 +48,8 @@ suggest_threshold = function(model, data, features,
         STs[i] = compute_st(fe[[i]]$fp_f)
       }
     } else {
-      STs = compute_st(fe$fp_f)
+      if (test_class(fe, "IntameFeatureEffect")) STs = compute_st(fe$fp_f)
+      else STs = compute_st(fe)
     }
     var_fraction = 1 - explained_fraction # e.g. 0.05 corresponds to R squared of 95%
     all_thresholds = setNames(var_fraction * STs, features)

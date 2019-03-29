@@ -5,7 +5,7 @@
 #'
 #' @param x [\code{numeric}]
 #' @param f [\code{numeric}]
-#' @template arg_metric_name
+#' @template arg_metric_name_th
 #' @param threshold [\code{numeric(1)}] Stopping criterium.
 #' @param max_splits [\code{integer(1)}] Stopping criterium.
 #' @param greedy [\code{logical(1)}] If FALSE, consider each possible split
@@ -17,15 +17,25 @@
 #'
 #' @return object of class \code{IntamePartition}
 #' @export
-iterative_partition = function(x, f, metric_name = "R2int",
-                               threshold = .95, max_splits = 10L,
+iterative_partition = function(x, f, metric_name = NULL,
+                               threshold = NULL, max_splits = 10L,
                                greedy = FALSE, verbose = NULL, ...) {
   assert_numeric(x)
   assert_numeric(f)
   assert(length(x) == length(f))
-  assert_choice(metric_name, choices = ImplementedMetrics)
-  if (test_class(threshold, "IntameThreshold")) threshold = threshold$threshold
-  else assert_numeric(threshold, len = 1)
+  assert_choice(metric_name, choices = ImplementedMetrics, null.ok = TRUE)
+  if (test_class(threshold, "IntameThreshold")) {
+    if (is.null(metric_name)) metric_name = threshold$metric_name
+    else if (metric_name != threshold$metric_name) {
+      warning("metric_name is not the same as used for the threshold.
+        Set to the threshold metric.")
+      metric_name = threshold$metric_name
+    }
+    threshold = threshold$threshold
+  } else assert_numeric(threshold, len = 1, null.ok = TRUE)
+  if (is.null(metric_name)) metric_name = ImplementedMetrics[1]
+  if (is.null(threshold)) threshold = suggest_threshold(model = NULL, data = NULL,
+    features = NULL, metric_name = metric_name, fe = f)$threshold
   assert_integerish(max_splits, len = 1)
   assert_logical(greedy)
   assert_logical(verbose, null.ok = TRUE)

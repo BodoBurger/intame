@@ -7,7 +7,7 @@
 #' @param feature [\code{character(1)}]\cr
 #'   Feature name, subset of \code{colnames(data)}.
 #' @template arg_predict_fun
-#' @template arg_metric_name
+#' @template arg_metric_name_th
 #' @param threshold [\code{numeric(1)}]\cr
 #'   Stopping criterium. See \link[intame]{suggest_threshold} for more details
 #'   and explanation of default values.
@@ -62,7 +62,7 @@
 #' plot(AME.x2)
 intame = function(model, data, feature,
                   predict_fun = function(object, newdata) predict(object, newdata),
-                  metric_name = "R2int", threshold = "default", max_splits = 10L,
+                  metric_name = NULL, threshold = NULL, max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
                   output_method = "lm", use_iter_algo = TRUE,
@@ -70,6 +70,17 @@ intame = function(model, data, feature,
   assert_choice(feature, colnames(data))
   assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
   assert_choice(fe_method, c("ALE", "PD"))
+  assert_choice(metric_name, choices = ImplementedMetrics, null.ok = TRUE)
+  if (test_class(threshold, "IntameThreshold")) {
+    if (is.null(metric_name)) metric_name = threshold$metric_name
+    else if (metric_name != threshold$metric_name) {
+      warning("metric_name is not the same as used for the threshold.
+        Set to the threshold metric.")
+      metric_name = threshold$metric_name
+    }
+    threshold = threshold$threshold
+  } else assert_numeric(threshold, len = 1, null.ok = TRUE)
+  if (is.null(metric_name)) metric_name = ImplementedMetrics[1]
 
   if (fe_method == "ALE") {
     FE = computeALE(model = model, data = data, feature = feature,
@@ -84,7 +95,7 @@ intame = function(model, data, feature,
   fe_f = FE$fe_f
   if (is.null(x_splits)) {
     if (use_iter_algo) {
-      if (threshold == "default") {
+      if (is.null(threshold)) {
         threshold = suggest_threshold(model, data, feature, metric_name,
           fe_method, fe = FE, ...)$threshold
       }
