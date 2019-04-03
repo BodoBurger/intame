@@ -1,0 +1,87 @@
+
+```{r datasets}
+spam = mlr::getTaskData(mlr::spam.task) # classifaction data set
+boston = mlr::getTaskData(mlr::bh.task) # regression data set
+```
+
+```{r randomForest}
+library(randomForest)
+
+rf.mod = randomForest(medv ~ ., boston, ntree = 100)
+rf.mod$type
+predict(rf.mod, boston)
+
+plot(intame(rf.mod, boston, "lstat"))
+
+rf.mod.classif = randomForest(type ~ ., spam, ntree = 100)
+rf.mod.classif$type
+rf.mod.classif$classes
+predict(rf.mod.classif, spam, type = "prob")[, rf.mod.classif$classes[1]]
+
+plot(computeALE(rf.mod.classif, spam, "make"))
+plot(intame(rf.mod.classif, spam, "charExclamation"))
+```
+
+```{r gbm}
+library(gbm)
+spam.gbm = spam
+spam.gbm$type = as.numeric(spam.gbm$type) - 1
+
+gbm.mod.regr = gbm(medv ~ ., data = boston)
+gbm.mod.regr$distribution$name
+gbm.mod.regr$n.trees
+predict(gbm.mod.regr, boston, n.trees = 100)
+
+gbm.mod.classif = gbm(type ~ ., data = spam.gbm)
+gbm.mod.classif$distribution$name
+gbm.mod.classif$n.trees
+predict(gbm.mod.classif, spam.gbm, type = "response", n.trees = 100)
+
+plot(intame(gbm.mod.regr, boston, "lstat"))
+plot(computeALE(gbm.mod.classif, spam.gbm, "charExclamation"))
+plot(intame(gbm.mod.classif, spam.gbm, "charExclamation"))
+plot(intame(gbm.mod.classif, spam.gbm, "make"))
+```
+
+```{r svm}
+library(e1071)
+
+svm.mod.regr = svm(medv ~ ., data = boston)
+svm.mod.regr$type
+predict(svm.mod.regr, boston)
+
+svm.mod.classif = svm(type ~ ., data = spam, probability = TRUE)
+svm.mod.classif$type
+svm.mod.classif$levels
+tmp = predict(svm.mod.classif, spam.gbm, probability = TRUE)
+attributes(tmp)$probabilities[, "spam"]
+
+plot(intame(svm.mod.regr, boston, "lstat"))
+plot(computeALE(svm.mod.classif, spam.gbm, "charExclamation"))
+plot(intame(svm.mod.classif, spam.gbm, "charExclamation", fe_method = "PD",
+  greedy = TRUE))
+plot(intame(gbm.mod.classif, spam.gbm, "make", greedy = TRUE))
+```
+
+
+```{r nnet}
+library(nnet)
+
+nnet.mod.regr = nnet(medv ~ ., data = boston, size = 10, linout = TRUE,
+  decay=0.01, maxit = 1000, trace = FALSE)
+nnet.mod.regr
+predict(nnet.mod.regr, boston)[,1]
+
+nnet.mod.classif = nnet(type ~ ., data = spam,  size = 10, linout = FALSE,
+  decay=0.01, maxit = 1000, trace = FALSE)
+nnet.mod.classif$
+nnet.mod.classif$levels
+tmp = predict(nnet.mod.classif, spam.gbm, probability = TRUE)
+attributes(tmp)$probabilities[, "spam"]
+
+plot(intame(nnet.mod.regr, boston, "lstat"))
+plot(computeALE(nnet.mod.classif, spam.gbm, "charExclamation"))
+plot(intame(nnet.mod.classif, spam.gbm, "charExclamation", fe_method = "PD",
+  greedy = TRUE))
+plot(intame(gbm.mod.classif, spam.gbm, "make", greedy = TRUE))
+```
