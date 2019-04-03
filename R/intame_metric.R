@@ -44,7 +44,7 @@ suggest_threshold = function(model, data, features,
       fe = vector(mode = "list", length(features))
       STs = numeric(length(features))
       for (i in seq_along(features)) {
-        fe[[i]] = computeFeatureEffect(fe_method, model, data, features[i], ...)
+        fe[[i]] = computeFE(model, data, features[i], fe_method, ...)
         STs[i] = compute_st(fe[[i]]$fp_f)
       }
     } else {
