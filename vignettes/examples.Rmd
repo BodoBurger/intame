@@ -84,6 +84,13 @@ AME.x2.quantiles
 plot(AME.x2.quantiles)
 ```
 
+## `computeFE()`
+
+```{r}
+
+```
+
+
 ## `computePD()`
 
 ### Regression example using nnet

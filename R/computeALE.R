@@ -31,19 +31,18 @@
 #'   df = data.frame(y, x1, x2, x3)
 #'   nnet.fit = nnet(y ~ ., data = df, size = 10, linout = TRUE,
 #'     decay=0.01, maxit = 1000, trace = FALSE)
-#'   predict_fun = function(X.model, newdata)
-#'     as.numeric(predict(object, newdata))
 #'   p1 = plot(computeALE(nnet.fit, df, feature="x1", grid_size=50))
 #'   p2 = plot(computeALE(nnet.fit, df, feature="x2", grid_size=50))
 #'   p3 = plot(computeALE(nnet.fit, df, feature="x3", grid_size=50))
 #'   grid.arrange(p1, p2, p3, ncol=2)
 #' }
 computeALE = function(model, data, feature,
-                      predict_fun = predict,
+                      predict_fun = NULL,
                       grid_size = "default", grid_breaks = NULL,
                       center_at_zero = FALSE, multiclass = FALSE, ...) {
   assert_choice(feature, colnames(data))
-  assert_function(predict_fun, args = c("object"))
+  if (is.null(predict_fun)) predict_fun = get_prediction_function(model)
+  else assert_function(predict_fun, args = c("object", "newdata"))
 
   if (grid_size == "default") {
     grid_size = round(nrow(data)/5)

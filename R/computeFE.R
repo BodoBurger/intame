@@ -14,10 +14,11 @@
 #'
 #' @return Feature effect object, either of class "ALE" or "PD".
 #' @export
-computeFeatureEffect = function(fe_method,
-                                model, data, feature,
-                                predict_fun = predict,
-                                grid_size = "default", ...) {
+computeFE = function(model, data, feature, fe_method = "ALE",
+                     predict_fun = NULL,
+                     grid_size = "default", ...) {
+  if (is.null(predict_fun)) predict_fun = get_prediction_function(model)
+  else assert_function(predict_fun, args = c("object", "newdata"))
   if (fe_method == "ALE") {
     computeALE(model, data, feature,
       predict_fun = predict_fun, grid_size = grid_size, ...)

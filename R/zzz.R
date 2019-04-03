@@ -11,3 +11,23 @@
 
   invisible()
 }
+
+get_prediction_function = function(model) {
+  UseMethod("get_prediction_function", model)
+}
+
+get_prediction_function.default = function(model) {
+  function(object, newdata) predict(object, newdata = newdata)
+}
+
+get_prediction_function.WrappedModel = function(model) {
+  task_type = mlr::getTaskType(model)
+  if (task_type == "regr") {
+    predict_fun = function(object, newdata)
+      mlr::getPredictionResponse(predict(object, newdata = newdata))
+  } else if (task_type == "classif") {
+    predict_fun = function(object, newdata)
+      mlr::getPredictionProbabilities(predict(object, newdata = newdata))
+  } else stop("Task type not supported.")
+  predict_fun
+}
