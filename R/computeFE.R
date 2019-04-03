@@ -15,15 +15,10 @@
 #' @return Feature effect object, either of class "ALE" or "PD".
 #' @export
 computeFE = function(model, data, feature, fe_method = "ALE",
-                     predict_fun = predict,
+                     predict_fun = NULL,
                      grid_size = "default", ...) {
-  UseMethod("computeFE", model)
-}
-
-#' @export
-computeFE.default = function(model, data, feature, fe_method = "ALE",
-                             predict_fun = predict,
-                             grid_size = "default", ...) {
+  if (is.null(predict_fun)) predict_fun = get_prediction_function(model)
+  else assert_function(predict_fun, args = c("object", "newdata"))
   if (fe_method == "ALE") {
     computeALE(model, data, feature,
       predict_fun = predict_fun, grid_size = grid_size, ...)
@@ -31,14 +26,4 @@ computeFE.default = function(model, data, feature, fe_method = "ALE",
     computePD(model, data, feature,
       predict_fun = predict_fun, grid_size = grid_size, ...)
   } else stop("fe_method=", fe_method, " not supported.")
-}
-
-#' @export
-computeFE.WrappedModel = function(model, data, feature, fe_method = "ALE",
-                             predict_fun = predict,
-                             grid_size = "default", ...) {
-  predict_fun = get_mlr_prediction_function(model)
-  computeFE.default(model, data, feature, fe_method,
-    predict_fun = predict_fun,
-    grid_size = grid_size, ...)
 }

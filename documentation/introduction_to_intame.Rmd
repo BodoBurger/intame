@@ -141,7 +141,7 @@ plot(ALE.x2) +
 #### Compute AME given the intervals
 
 ```{r}
-AME.x2 = intame(nnet.mod$learner.model, df, "x2", x_splits = breaks.ALE,
+AME.x2 = intame(nnet.mod, df, "x2", x_splits = breaks.ALE,
   use_iter_algo = FALSE, output_method = "AME")
 AME.x2
 plot(AME.x2)
@@ -190,23 +190,21 @@ plot(AME.x2.auto)
 AME.x2.auto$bounds
 ```
 
-#### Local PDeriv
+#### Local PD
 
 ```{r}
-AME.x2.LPD = intame(nnet.mod, df, "x2",
-                       fe_method = "PD", l = 40)
-plot(intame(nnet.mod, df, "x2", fe_method = "PD"))
-plot(AME.x2.LDeriv) + ggtitle("Local Partial Derivative, l = 40")
+AME.x2.LPD = intame(nnet.mod, df, "x2", fe_method = "PD", l = 40, greedy=TRUE)
+plot(AME.x2.LPD) + ggtitle("Local Partial Derivative, l = 40")
+plot(intame(nnet.mod, df, "x2", fe_method = "PD", greedy=TRUE))
 ```
 
-No difference to PDeriv.
+No difference to PD.
 
-#### Weighted PDeriv
+#### Weighted PD
 
 ```{r}
-AME.x2.WDeriv = intame(nnet.mod$learner.model, df, "x2",
-                                method = "PDeriv", w = 4)
-plot(AME.x2.WDeriv) + ggtitle("Weighted Partial Derivative, w = 4")
+AME.x2.WPD = intame(nnet.mod, df, "x2", fe_method = "PD", w = 4, greedy=TRUE)
+plot(AME.x2.WPD) + ggtitle("Weighted Partial Derivative, w = 4")
 ```
 
 No difference to PDeriv.
@@ -320,29 +318,26 @@ plot(computeFE(gbm.mod, data = dt, "x2", fe_method = "PD"))
 
 
 ```{r}
-intame(lm.mod$learner.model, data = dt, "x2")
+intame(lm.mod, data = dt, "x2")
 intame(nnet.mod$learner.model, data = dt, "x2")
-intame(svm.mod$learner.model, data = dt[train.ind,], "x2")
-intame(gbm.mod$learner.model, data = dt[train.ind,], "x2",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+plot(intame(svm.mod$learner.model, data = dt, "x2"))
+plot(intame(gbm.mod, data = dt, "x2"))
 ```
 
 #### Feature x5
 
 ```{r}
-plot(computeALE(lm.mod$learner.model, data = dt, "x5"))
-plot(computeALE(nnet.mod$learner.model, data = dt, "x5"))
-plot(computeALE(svm.mod$learner.model, data = dt, "x5"))
-plot(computeALE(gbm.mod$learner.model, data = dt, "x5",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+plot(computeALE(lm.mod, data = dt, "x5"))
+plot(computeALE(nnet.mod, data = dt, "x5"))
+plot(computeALE(svm.mod, data = dt, "x5"))
+plot(computeALE(gbm.mod, data = dt, "x5"))
 ```
 
 ```{r}
-plot(computePD(lm.mod$learner.model, data = dt, "x5"))
-plot(computePD(nnet.mod$learner.model, data = dt, "x5"))
-plot(computePD(svm.mod$learner.model, data = dt, "x5"))
-plot(computePD(gbm.mod$learner.model, data = dt, "x5",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+plot(computePD(lm.mod, data = dt, "x5"))
+plot(computePD(nnet.mod, data = dt, "x5"))
+plot(computePD(svm.mod, data = dt, "x5"))
+plot(computePD(gbm.mod, data = dt, "x5"))
 ```
 
 
@@ -350,7 +345,6 @@ plot(computePD(gbm.mod$learner.model, data = dt, "x5",
 intame(lm.mod$learner.model, data = dt, "x5")
 intame(nnet.mod$learner.model, data = dt, "x5")
 intame(svm.mod$learner.model, data = dt[train.ind,], "x5")
-AME.x5.gbm = intame(gbm.mod$learner.model, data = dt[train.ind,], "x5",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees))
+AME.x5.gbm = intame(gbm.mod, data = dt[train.ind,], "x5")
 plot(AME.x5.gbm)
 ```

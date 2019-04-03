@@ -62,13 +62,15 @@
 #' AME.x2
 #' plot(AME.x2)
 intame = function(model, data, feature,
-                  predict_fun = function(object, newdata) predict(object, newdata),
+                  predict_fun = NULL,
                   metric_name = NULL, threshold = NULL, max_splits = 10L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
                   output_method = "lm", use_iter_algo = TRUE,
                   ...) {
   assert_choice(feature, colnames(data))
+  if (is.null(predict_fun)) predict_fun = get_prediction_function(model)
+  else assert_function(predict_fun, args = c("object", "newdata"))
   assert_integerish(max_splits, lower = 2, any.missing = FALSE, max.len = 1)
   assert_choice(fe_method, c("ALE", "PD"))
   assert_choice(metric_name, choices = ImplementedMetrics, null.ok = TRUE)
@@ -130,9 +132,6 @@ intame = function(model, data, feature,
     x.interval.average = ALEint$fe_x
     y.hat.mean = (ALEint$fp_f[1:n_intervals] + ALEint$fp_f[2:(n_intervals+1)]) / 2
   } else if (output_method == "AME") {
-    if (test_class(model, "WrappedModel")) {
-      predict_fun = get_mlr_prediction_function(model)
-    }
     y.hat = predict_fun(model, data)
     bounds[n_intervals+1] = bounds[n_intervals+1] + 0.000001
     for (i in 1:n_intervals) {
