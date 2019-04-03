@@ -11,3 +11,15 @@
 
   invisible()
 }
+
+get_mlr_prediction_function = function(model) {
+  task_type = mlr::getTaskType(model)
+  if (task_type == "regr") {
+    predict_fun = function(object, newdata)
+      mlr::getPredictionResponse(predict(object, newdata = newdata))
+  } else if (task_type == "classif") {
+    predict_fun = function(object, newdata)
+      mlr::getPredictionProbabilities(predict(object, newdata = newdata))
+  } else stop("Task type not supported.")
+  predict_fun
+}

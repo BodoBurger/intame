@@ -37,14 +37,7 @@ computeFE.default = function(model, data, feature, fe_method = "ALE",
 computeFE.WrappedModel = function(model, data, feature, fe_method = "ALE",
                              predict_fun = predict,
                              grid_size = "default", ...) {
-  task_type = mlr::getTaskType(model)
-  if (task_type == "regr") {
-    predict_fun = function(object, newdata)
-      mlr::getPredictionResponse(predict(object, newdata = newdata))
-  } else if (task_type == "classif") {
-    predict_fun = function(object, newdata)
-      mlr::getPredictionProbabilities(predict(object, newdata = newdata))
-  } else stop("Task type not supported.")
+  predict_fun = get_mlr_prediction_function(model)
   computeFE.default(model, data, feature, fe_method,
     predict_fun = predict_fun,
     grid_size = grid_size, ...)

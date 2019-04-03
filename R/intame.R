@@ -57,7 +57,8 @@
 #' AME.x1 = intame(nnet.mod, df, "x1")
 #' AME.x1
 #' plot(AME.x1)
-#' AME.x2 = intame(nnet.mod, df, "x2", threshold = .9, fe_grid_size = 25, greedy = TRUE)
+#' AME.x2 = intame(nnet.mod, df, "x2", metric_name = "R2", threshold = .9,
+#'   fe_grid_size = 25, greedy = TRUE)
 #' AME.x2
 #' plot(AME.x2)
 intame = function(model, data, feature,
@@ -82,13 +83,8 @@ intame = function(model, data, feature,
   } else assert_numeric(threshold, len = 1, null.ok = TRUE)
   if (is.null(metric_name)) metric_name = ImplementedMetrics[1]
 
-  if (fe_method == "ALE") {
-    FE = computeALE(model = model, data = data, feature = feature,
-      predict_fun = predict_fun, grid_size = fe_grid_size, ...)
-  } else if (fe_method == "PD") {
-    FE = computePD(model = model, data = data, feature = feature,
-      predict_fun = predict_fun, grid_size = fe_grid_size, derivative = FALSE, ...)
-  }
+  FE = computeFE(model, data, feature, fe_method = fe_method,
+    predict_fun = predict_fun, grid_size = fe_grid_size, ...)
   fp_x = FE$fp_x
   fp_f = FE$fp_f
   fe_x = FE$fe_x
@@ -126,13 +122,17 @@ intame = function(model, data, feature,
       y.hat.mean[i] = x.interval.average[i] * AME[i] + coefficients_interval[1]
     }
   } else if (output_method == "ALE") {
-    ALEint = computeALE(model = model, data = data, feature = feature,
+    ALEint = computeFE(model = model, data = data, feature = feature,
+      fe_method = "ALE",
       predict_fun = predict_fun, grid_size = fe_grid_size,
       grid_breaks = x_splits, ...)
     AME = ALEint$fe_f
     x.interval.average = ALEint$fe_x
     y.hat.mean = (ALEint$fp_f[1:n_intervals] + ALEint$fp_f[2:(n_intervals+1)]) / 2
   } else if (output_method == "AME") {
+    if (test_class(model, "WrappedModel")) {
+      predict_fun = get_mlr_prediction_function(model)
+    }
     y.hat = predict_fun(model, data)
     bounds[n_intervals+1] = bounds[n_intervals+1] + 0.000001
     for (i in 1:n_intervals) {

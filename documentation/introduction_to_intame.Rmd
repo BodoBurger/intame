@@ -81,10 +81,10 @@ For feature 2, AME is less meaningful because of the non-monotonic effect.
 ### Feature 1
 
 ```{r feature-1}
-ALE.x1 = computeALE(nnet.mod$learner.model, df, "x1", grid_size = 30)
-plot(ALE.x1, derivative = FALSE)
+ALE.x1 = computeFE(nnet.mod, df, "x1", grid_size = 30)
+plot(ALE.x1)
 mean(ALE.x1$fe_f)
-PD.x1 = computePD(nnet.mod$learner.model, df, "x1", grid_size = 30, grid_method = "quantile")
+PD.x1 = computeFE(nnet.mod, df, "x1", fe_method = "PD", grid_size = 30, grid_method = "quantile")
 plot(PD.x1)
 mean(PD.x1$fe_f)
 ```
@@ -95,9 +95,9 @@ Does this indicate ALE is better at representing the marginal effect?
 ### Feature 2
 
 ```{r feature-2}
-ALE.x2 = computeALE(nnet.mod$learner.model, df, "x2", grid_size = 30)
+ALE.x2 = computeFE(nnet.mod, df, "x2", grid_size = 30)
 plot(ALE.x2)
-PD.x2 = computePD(nnet.mod$learner.model, df, "x2", grid_size = 30, grid_method = "quantile")
+PD.x2 = computeFE(nnet.mod, df, "x2", fe_method = "PD", grid_size = 30, grid_method = "quantile")
 plot(PD.x2)
 # analytical derivation of the additive part of feature 2:
 y2_partial = function(x) 4 * sin(4*pi*x) * 4*pi * x - 4 * cos(4*pi*x)
@@ -142,7 +142,7 @@ plot(ALE.x2) +
 
 ```{r}
 AME.x2 = intame(nnet.mod$learner.model, df, "x2", x_splits = breaks.ALE,
-  use_iter_algo = FALSE)
+  use_iter_algo = FALSE, output_method = "AME")
 AME.x2
 plot(AME.x2)
 ```
@@ -171,8 +171,9 @@ An additional break point at around .25 might be sensible. We add it and calcula
 AMEs for each interval again.
 
 ```{r}
-AME.x2.add.break.point = intame(nnet.mod$learner.model, df, "x2",
-  breaks = c(0.25, breaks.PD), method = "PDeriv")
+AME.x2.add.break.point = intame(nnet.mod, df, "x2",
+  x_splits = c(0.25, breaks.PD),
+  use_iter_algo = FALSE, output_method = "AME")
 AME.x2.add.break.point$AME
 plot(AME.x2.add.break.point)
 ```
@@ -182,7 +183,8 @@ plot(AME.x2.add.break.point)
 *intame* calculates breaks points by default:
 
 ```{r}
-AME.x2.auto = intame(nnet.mod$learner.model, df, "x2", method = "PDeriv")
+AME.x2.auto = intame(nnet.mod, df, "x2", fe_method = "ALE",
+  use_iter_algo = FALSE, output_method = "AME")
 AME.x2.auto
 plot(AME.x2.auto)
 AME.x2.auto$bounds
@@ -191,8 +193,9 @@ AME.x2.auto$bounds
 #### Local PDeriv
 
 ```{r}
-AME.x2.LDeriv = intame(nnet.mod$learner.model, df, "x2",
-                                method = "PDeriv", l = 40)
+AME.x2.LPD = intame(nnet.mod, df, "x2",
+                       fe_method = "PD", l = 40)
+plot(intame(nnet.mod, df, "x2", fe_method = "PD"))
 plot(AME.x2.LDeriv) + ggtitle("Local Partial Derivative, l = 40")
 ```
 
@@ -302,19 +305,17 @@ performance(gbm.pred, list(mse, rsq))
 #### Feature x2
 
 ```{r}
-plot(computeALE(lm.mod$learner.model, data = dt, "x2"))
-plot(computeALE(nnet.mod$learner.model, data = dt, "x2"))
-plot(computeALE(svm.mod$learner.model, data = dt, "x2"))
-plot(computeALE(gbm.mod$learner.model, data = dt, "x2",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+plot(computeFE(lm.mod, data = dt, "x2"))
+plot(computeFE(nnet.mod, data = dt, "x2"))
+plot(computeFE(svm.mod, data = dt, "x2"))
+plot(computeFE(gbm.mod, data = dt, "x2"))
 ```
 
 ```{r}
-plot(computePD(lm.mod$learner.model, data = dt, "x2"))
-plot(computePD(nnet.mod$learner.model, data = dt, "x2"))
-plot(computePD(svm.mod$learner.model, data = dt, "x2"))
-plot(computePD(gbm.mod$learner.model, data = dt, "x2",
-  predict_fun = function(object, newdata) predict(object, newdata, n.trees = ntrees)))
+plot(computeFE(lm.mod, data = dt, "x2", fe_method = "PD"))
+plot(computeFE(nnet.mod, data = dt, "x2", fe_method = "PD"))
+plot(computeFE(svm.mod, data = dt, "x2", fe_method = "PD"))
+plot(computeFE(gbm.mod, data = dt, "x2", fe_method = "PD"))
 ```
 
 
