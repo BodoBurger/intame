@@ -57,31 +57,41 @@ tmp = predict(svm.mod.classif, spam.gbm, probability = TRUE)
 attributes(tmp)$probabilities[, "spam"]
 
 plot(intame(svm.mod.regr, boston, "lstat"))
-plot(computeALE(svm.mod.classif, spam.gbm, "charExclamation"))
-plot(intame(svm.mod.classif, spam.gbm, "charExclamation", fe_method = "PD",
+plot(computeALE(svm.mod.classif, spam, "charExclamation"))
+plot(intame(svm.mod.classif, spam, "charExclamation", fe_method = "PD",
   greedy = TRUE))
-plot(intame(gbm.mod.classif, spam.gbm, "make", greedy = TRUE))
+plot(intame(gbm.mod.classif, spam, "make", greedy = TRUE))
 ```
-
 
 ```{r nnet}
 library(nnet)
 
 nnet.mod.regr = nnet(medv ~ ., data = boston, size = 10, linout = TRUE,
   decay=0.01, maxit = 1000, trace = FALSE)
-nnet.mod.regr
+is.null(nnet.mod.regr$lev)
 predict(nnet.mod.regr, boston)[,1]
 
 nnet.mod.classif = nnet(type ~ ., data = spam,  size = 10, linout = FALSE,
   decay=0.01, maxit = 1000, trace = FALSE)
-nnet.mod.classif$
-nnet.mod.classif$levels
-tmp = predict(nnet.mod.classif, spam.gbm, probability = TRUE)
-attributes(tmp)$probabilities[, "spam"]
+is.null(nnet.mod.classif$lev)
+tail(predict(nnet.mod.classif, spam, type = "raw"))
 
 plot(intame(nnet.mod.regr, boston, "lstat"))
-plot(computeALE(nnet.mod.classif, spam.gbm, "charExclamation"))
-plot(intame(nnet.mod.classif, spam.gbm, "charExclamation", fe_method = "PD",
+plot(computeALE(nnet.mod.classif, spam, "charExclamation"))
+plot(intame(nnet.mod.classif, spam, "charExclamation", fe_method = "PD",
   greedy = TRUE))
-plot(intame(gbm.mod.classif, spam.gbm, "make", greedy = TRUE))
+plot(intame(nnet.mod.classif, spam, "make", greedy = TRUE))
 ```
+
+```{r glm}
+glm.mod.regr = glm(medv ~ ., data = boston, family = gaussian())
+predict(glm.mod.regr, boston)
+
+glm.mod.classif = glm(type ~ ., data = spam, family = binomial())
+range(predict(glm.mod.classif, newdata = spam, type = "response"))
+
+plot(intame(glm.mod.regr, boston, "lstat"))
+plot(intame(glm.mod.classif, spam, "charExclamation", fe_method = "PD",
+  greedy = TRUE))
+```
+
