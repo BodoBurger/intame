@@ -28,7 +28,7 @@
 #'   "lm": Report slope of linear model in each interval.
 #'   "ALE": Recalculate ALE with "optimal" intervals.
 #'   "AME": Calculate "classic" Average Marginal Effects for each interval.
-#' @param use_iter_algo (recommended)
+#' @param use_iter_algo [\code{logical(1)}] (recommended)
 #' @param ... Arguments passed on to other functions: computeALE, computePD
 #'
 #' @return
@@ -211,7 +211,7 @@ plot.Intame = function(x, title = "default",
   assert_logical(rugs, len = 1)
   if (title == "default") {
     title = paste0("Intame using ", x$fe_method, ", metric: ", x$metric_name,
-      ", output method: ", x$output_method)
+      ", output: ", x$output_method)
   }
   AME = x$AME
   x.0 = x$x.interval.average
