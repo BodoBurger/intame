@@ -35,7 +35,7 @@ iterative_partition = function(x, f, metric_name = NULL,
   } else assert_numeric(threshold, len = 1, null.ok = TRUE)
   if (is.null(metric_name)) metric_name = ImplementedMetrics[1]
   if (is.null(threshold)) threshold = suggest_threshold(model = NULL, data = NULL,
-    features = NULL, metric_name = metric_name, fe = f)$threshold
+    features = NULL, metric_name = metric_name, fe = f, ...)$threshold
   assert_integerish(max_splits, len = 1)
   assert_logical(greedy)
   assert_logical(verbose, null.ok = TRUE)
