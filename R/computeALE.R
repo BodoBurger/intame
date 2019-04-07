@@ -58,7 +58,7 @@ computeALE = function(model, data, feature,
       warning("grid_size was set to equal (or greater) than number of obs.")
       z = sort(x)
     } else {
-      z = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
+      z = c(min(x), as.numeric(quantile(x, seq.int(from = 1/grid_size, to = 1,
         length.out = grid_size), type = 1)))
         # c(min(), quantile()) necessary for grid_size = n
     }

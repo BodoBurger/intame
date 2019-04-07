@@ -22,11 +22,14 @@ Imports:
     utils
 Suggests:
     ALEPlot,
+    e1071,
+    gbm,
     gridExtra,
     knitr,
     mlr,
     nnet,
     patchwork,
+    randomForest,
     rmarkdown,
     testthat
 License: BSD_3_clause + file LICENSE

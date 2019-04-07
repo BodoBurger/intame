@@ -141,10 +141,18 @@ plot(ALE.x2) +
 #### Compute AME given the intervals
 
 ```{r}
-AME.x2 = intame(nnet.mod, df, "x2", x_splits = breaks.ALE,
+AME.x2.bg.ame = intame(nnet.mod, df, "x2", x_splits = breaks.ALE,
   use_iter_algo = FALSE, output_method = "AME")
+AME.x2.bg = intame(nnet.mod, df, "x2", x_splits = breaks.ALE, output_method = "ALE")
+plot(AME.x2.bg)
+
+AME.x2 = intame(nnet.mod, df, "x2", max_splits = 5)
+AME.x2.ame = intame(nnet.mod, df, "x2", x_splits = AME.x2$x_splits,
+  output_method = "AME")
+
 AME.x2
 plot(AME.x2)
+plot(AME.x2.ame)
 ```
 
 We check the result by calculating the "true" effect in each interval
@@ -159,7 +167,20 @@ for (i in 1:l) {
   df.interval = df[selection,]
   true.effects[i] = mean(y2_partial(x2[selection]))
 }
+AME.x2.bg
+AME.x2.ame
+true.effects
+
+bounds = unique(c(min(x2), sort(AME.x2$x_splits), max(x2) + 0.00001))
+l = length(bounds) - 1
+true.effects = numeric(l)
+for (i in 1:l) {
+  selection = x2 >= bounds[i] & x2 < bounds[i+1]
+  df.interval = df[selection,]
+  true.effects[i] = mean(y2_partial(x2[selection]))
+}
 AME.x2
+AME.x2.ame
 true.effects
 ```
 

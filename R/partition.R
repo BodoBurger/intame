@@ -84,7 +84,7 @@ partitionCluster = function(x, y, n_parts, eval.fun = absDiffMean) {
     yp[[i]] = unlist(yp[c(i, i+1)])
     yp[i+1] = NULL
   }
-  split.points = vapply(seq.int(1, length(intervals)-1),
+  split.points = vapply(seq_len(length(intervals)-1),
     function(i) mean(c(intervals[[i]][2], intervals[[i+1]][1])), FUN.VALUE = numeric(1))
   return(split.points)
 }

@@ -25,8 +25,8 @@
 #'   Define interval limits manually. If given, search for optimal split points
 #'   skipped.
 #' @param output_method [\code{character(1)}]\cr
-#'   "lm": Report slope of linear model in each interval.
-#'   "ALE": Recalculate ALE with "optimal" intervals.
+#'   "lm": Report slope of linear model in each interval.\cr
+#'   "ALE": Recalculate ALE with "optimal" intervals.\cr
 #'   "AME": Calculate "classic" Average Marginal Effects for each interval.
 #' @param use_iter_algo [\code{logical(1)}] (recommended)
 #' @param ... Arguments passed on to other functions: computeALE, computePD

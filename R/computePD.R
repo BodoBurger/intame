@@ -80,9 +80,10 @@ computePD = function(model, data, feature,
   ##############################################################################
   x = data[, feature]
   if (grid_method == "uniform") {
-    x.grid = seq(min(x, na.rm = TRUE), max(x, na.rm = TRUE), length.out = grid_size)
+    x.grid = seq.int(from = min(x, na.rm = TRUE), to = max(x, na.rm = TRUE),
+      length.out = grid_size)
   } else if (grid_method == "quantile") {
-    x.grid = c(min(x), as.numeric(quantile(x, seq(1/grid_size, 1,
+    x.grid = c(min(x), as.numeric(quantile(x, seq.int(from = 1/grid_size, to = 1,
       length.out = grid_size), type = 1)))
     grid_size = length(x.grid)
   } else if (grid_method == "sample") {
