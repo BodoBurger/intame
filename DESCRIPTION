@@ -1,7 +1,8 @@
 Package: intame
 Type: Package
 Title: Calculate Interval-Based Marginal Effects
-Version: 0.0.0.9000
+Version: 0.0.0.9010
+Date: 2019-04-10
 Authors@R:
     person("Bodo", "Burger", email = "bododata@gmail.com", role = c("aut", "cre"))
 Description: Splits the feature space into several intervals of similar
