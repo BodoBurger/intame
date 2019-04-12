@@ -136,10 +136,10 @@ computePD = function(model, data, feature,
   }
 
   if (multiclass) {
-    plot_data = reshape2::melt(data = data.frame(x = x.grid, y.hat),
+    plot_data = reshape2::melt(data = data.frame(fp_x = x.grid, fp_f = y.hat),
       id.vars = "x", variable.name = "class", value.name = "probability")
   } else {
-    plot_data = data.frame(x = x.grid, y.hat)
+    plot_data = data.frame(fp_x = x.grid, fp_f = y.hat)
   }
   fe_x = (x.grid[-length(x.grid)] + x.grid[-1])/2
   fe_f = diff(y.hat)/diff(x.grid)
@@ -177,11 +177,11 @@ plot.PD = function(x, title = "PD Plot", rugs = TRUE, ...) {
       geom_line() + geom_point() +
       xlab(PD$feature) + ggtitle(title)
   } else {
-     p = ggplot(data = PD$plot_data, mapping = aes(x, y.hat)) +
+     p = ggplot(data = PD$plot_data, mapping = aes(fp_x, fp_f)) +
       geom_line() + geom_point()
      if (rugs) p = p + geom_rug(data = data.frame(x = PD$x_org), aes(x = x),
        alpha = .2, sides = "b", inherit.aes = FALSE)
-     p + xlab(PD$feature) + ggtitle(title)
+     p + xlab(PD$feature) + ylab("PD") + ggtitle(title)
   }
 }
 

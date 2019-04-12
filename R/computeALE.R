@@ -160,7 +160,7 @@ plot.ALE = function(x, title = "ALE Plot", rugs = TRUE, derivative = FALSE, ...)
         geom_line() + geom_point()
       if (rugs) p = p + geom_rug(data = data.frame(x = ALE$x_org), aes(x = x),
         alpha = .2, sides = "b", inherit.aes = FALSE)
-      p + xlab(ALE$feature) + ggtitle(title)
+      p + xlab(ALE$feature) + ylab("ALE") + ggtitle(title)
     }
   }
 }
