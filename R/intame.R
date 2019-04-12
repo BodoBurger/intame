@@ -63,7 +63,7 @@
 #' plot(AME.x2)
 intame = function(model, data, feature,
                   predict_fun = NULL,
-                  metric_name = NULL, threshold = NULL, max_splits = 10L,
+                  metric_name = NULL, threshold = NULL, max_splits = 8L,
                   fe_method = "ALE", fe_grid_size = "default",
                   x_splits = NULL,
                   output_method = "lm", use_iter_algo = TRUE,

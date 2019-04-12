@@ -18,7 +18,7 @@
 #' @return object of class \code{IntamePartition}
 #' @export
 iterative_partition = function(x, f, metric_name = NULL,
-                               threshold = NULL, max_splits = 10L,
+                               threshold = NULL, max_splits = 8L,
                                greedy = FALSE, verbose = NULL, ...) {
   assert_numeric(x)
   assert_numeric(f)
@@ -101,8 +101,9 @@ iterative_partition = function(x, f, metric_name = NULL,
         metrics_history[n_splits])/metrics_history[n_splits])
       splits_history[[n_splits]] = opt_split
       if (verbose) cat("|.")
-      if (compare_metric_values(opt_metric, threshold, metric_name) ||
-          n_splits == max_splits) {
+      if (compare_metric_values(opt_metric, threshold, metric_name)) break
+      if (n_splits == max_splits) {
+        warning("Stopped because number of splits == max_splits.")
         break
       }
     }
