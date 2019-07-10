@@ -1,11 +1,16 @@
 ---
-title: Interval-based Marginal Effects
-author: Bodo Burger
-date: 2019-04
-output:
-  github_document:
-    toc: yes
+title: "R package *intame*: Interval-based Marginal Effects"
+output: github_document
 ---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.path = "documentation/figures/README-",
+                      cache = TRUE, cache.path = "documentation/cache/README/")
+library("ggplot2")
+theme_set(theme_light())
+```
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![CRAN Status Badge](http://www.r-pkg.org/badges/version/intame)](http://cran.r-project.org/web/packages/intame)
@@ -20,12 +25,30 @@ Install the development version from GitHub (using `devtools`):
 ```{r installation, eval=FALSE}
 devtools::install_github("bodoburger/intame")
 ```
-## Overview
-
-```{r}
-
-```
 
 ## Example
 
+```{r example}
+library(intame)
+library(nnet)
+set.seed(4219)
+n = 200
+x = runif(n, min = 0, max = 1)
+x1 = runif(n, min=0, max=1) + .5*x
+x2 = runif(n, min=0, max=1) + .5*x
+y2 = function(x) -4 * cos(4*pi*x) * x + 4
+y = 4*x1 + y2(x2) + rnorm(n, 0, .5)
+df = data.frame(y, x1, x2)
+nnet.mod = nnet(y ~ ., df, size = 20, linout = TRUE,
+  decay = 0.0001, maxit = 1000, trace = FALSE)
+AME.x1 = intame(nnet.mod, df, "x1")
+AME.x1
+plot(AME.x1)
+AME.x2 = intame(nnet.mod, df, "x2")
+AME.x2
+plot(AME.x2)
+```
+
 ## Documentation
+
+See [Rmarkdown files](https://github.com/BodoBurger/intame/tree/master/documentation).
